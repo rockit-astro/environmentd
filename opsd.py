@@ -141,8 +141,9 @@ class OperationsDaemon:
         vaisala_humidity = AggregateMeasurement(VAISALA_HUMIDITY_LIMITS)
         pressure = AggregateMeasurement(VAISALA_PRESSURE_LIMITS)
 
+        vaisala_measurement_start = None
+        vaisala_measurement_end = None
         vaisala_queue_start = None
-        vaisala_queue_end = None
         vaisala_queue_len = 0
         vaisala_sufficient_data = True
 
@@ -155,12 +156,15 @@ class OperationsDaemon:
             if vaisala_queue_start is None:
                 vaisala_queue_start = date
 
-            if vaisala_queue_end is None:
-                vaisala_queue_end = date
+            if vaisala_measurement_end is None:
+                vaisala_measurement_end = date
 
             # Only include measurements within the desired window
             if date > max_first_date:
-                if date - vaisala_queue_end > VAISALA_TIME_GAP_MAX:
+                if vaisala_measurement_start is None:
+                    vaisala_measurement_start = date
+
+                if date - vaisala_measurement_end > VAISALA_TIME_GAP_MAX:
                     vaisala_sufficient_data = False
 
                 wind.add(measurement['wind_speed'])
@@ -168,14 +172,14 @@ class OperationsDaemon:
                 vaisala_humidity.add(measurement['relative_humidity'])
                 pressure.add(measurement['pressure'])
 
-            vaisala_queue_end = date
+            vaisala_measurement_end = date
 
         # Check that the first measurement was sufficiently old
         if vaisala_queue_start is None or vaisala_queue_start > max_first_date:
             vaisala_sufficient_data = False
 
         # Check the time between the last measurement and now
-        if vaisala_queue_end is None or vaisala_queue_end < min_last_date:
+        if vaisala_measurement_end is None or vaisala_measurement_end < min_last_date:
             vaisala_sufficient_data = False
 
         # Can observe only if we have sufficient data and all of the parameters
@@ -191,11 +195,12 @@ class OperationsDaemon:
             'pressure': pressure.results(),
             'vaisala_temp': vaisala_temp.results(),
             'vaisala_humidity': vaisala_humidity.results(),
+            'vaisala_measurement_start': vaisala_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'vaisala_measurement_end': vaisala_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
             # Debug info
             'vaisala_queue_len': vaisala_queue_len,
-            'vaisala_queue_start': vaisala_queue_start,
-            'vaisala_queue_end': vaisala_queue_end,
+            'vaisala_queue_start': vaisala_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
         }
 
     def running(self):
