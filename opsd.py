@@ -200,6 +200,12 @@ class OperationsDaemon:
         """Stop the daemon thread"""
         self._running = False
 
+    def clear_history(self):
+        """Clear the cached measurements"""
+        print('{} MESSAGE: clearing cached history' \
+            .format(datetime.datetime.utcnow()))
+        self._vaisala_data.clear()
+
 def spawn_daemon():
     """Spawns the daemon and registers it with Pyro"""
     Pyro4.config.COMMTIMEOUT = PYRO_COMM_TIMEOUT
