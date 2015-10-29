@@ -97,29 +97,31 @@ class OperationsDaemon:
 
     def run_vaisala_thread(self):
         """Run loop for monitoring the vaisalad daemon"""
-        vaisala = None
         while self._running:
-            now = datetime.datetime.utcnow()
+            now = datetime.datetime.utcnow
 
             # Query the latest measurement
             # pylint: disable=broad-except
             try:
-                if vaisala is None:
-                    print('opening new connection')
-                    vaisala = Pyro4.Proxy(VAISALA_DAEMON_URI)
+                # The delay between queries is greater than the comm timeout
+                # so there is no point caching the proxy between loops
+                vaisala = Pyro4.Proxy(VAISALA_DAEMON_URI)
                 data = vaisala.last_measurement()
 
-                # Deserialize date on the fly
-                data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                print(data['date'])
+                if data is not None:
+                    # Pryo doesn't deserialize dates, so we manually manage this.
+                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
+                    if now() - data['date'] > VAISALA_TIME_GAP_MAX:
+                        print('{} WARNING: recieved stale data from vaisalad: {}' \
+                        .format(now(), data['date']))
 
-                if now - data['date'] > VAISALA_TIME_GAP_MAX:
-                    print('{} WARNING: recieved stale data from vaisalad: {}' \
-                      .format(now, date))
-                self._vaisala_data.append(data)
+                    self._vaisala_data.append(data)
+                else:
+                    print('{} WARNING: recieved empty data from vaisalad' \
+                        .format(now()))
             except Exception as exception:
                 print('{} ERROR: failed to query from vaisalad: {}' \
-                      .format(now, str(exception)))
+                      .format(now(), str(exception)))
             # pylint: enable=broad-except
 
             time.sleep(VAISALA_QUERY_DELAY)
@@ -128,7 +130,6 @@ class OperationsDaemon:
         """Returns the aggregated status of the monitored daemons.
            Each measurement is a tuple of min value, max value, measurement valid
         """
-
         # The youngest date that the first measurement can take while remaining valid
         max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
 
@@ -140,26 +141,26 @@ class OperationsDaemon:
         vaisala_humidity = AggregateMeasurement(VAISALA_HUMIDITY_LIMITS)
         pressure = AggregateMeasurement(VAISALA_PRESSURE_LIMITS)
 
-        vaisala_date_start = None
-        vaisala_date_end = None
+        vaisala_queue_start = None
+        vaisala_queue_end = None
+        vaisala_queue_len = 0
         vaisala_sufficient_data = True
 
         # deque is threadsafe, so we don't need an explicit lock
         for measurement in self._vaisala_data:
-            print('{}'.format(measurement))
+            vaisala_queue_len += 1
             date = measurement['date']
 
             # This is the first measurement with a valid date
-            if vaisala_date_start is None:
-                vaisala_date_start = date
+            if vaisala_queue_start is None:
+                vaisala_queue_start = date
 
-            if vaisala_date_end is None:
-                vaisala_date_end = date
+            if vaisala_queue_end is None:
+                vaisala_queue_end = date
 
             # Only include measurements within the desired window
             if date > max_first_date:
-                if date - vaisala_date_end > VAISALA_TIME_GAP_MAX:
-                    print('Gap between {} and {} is too large!'.format(date, vaisala_date_end))
+                if date - vaisala_queue_end > VAISALA_TIME_GAP_MAX:
                     vaisala_sufficient_data = False
 
                 wind.add(measurement['wind_speed'])
@@ -167,24 +168,28 @@ class OperationsDaemon:
                 vaisala_humidity.add(measurement['relative_humidity'])
                 pressure.add(measurement['pressure'])
 
-            vaisala_date_end = date
+            vaisala_queue_end = date
 
         # Check that the first measurement was sufficiently old
-        if vaisala_date_start is None or vaisala_date_start > max_first_date:
+        if vaisala_queue_start is None or vaisala_queue_start > max_first_date:
             vaisala_sufficient_data = False
 
         # Check the time between the last measurement and now
-        if vaisala_date_end is None or vaisala_date_end < min_last_date:
+        if vaisala_queue_end is None or vaisala_queue_end < min_last_date:
             vaisala_sufficient_data = False
 
         return {
-            'vaisala_date_start': vaisala_date_start,
-            'vaisala_date_end': vaisala_date_end,
+            'can_observe': False,
             'vaisala_sufficient_data': vaisala_sufficient_data,
             'wind': wind.results(),
             'pressure': pressure.results(),
             'vaisala_temp': vaisala_temp.results(),
             'vaisala_humidity': vaisala_humidity.results(),
+
+            # Debug info
+            'vaisala_queue_len': vaisala_queue_len,
+            'vaisala_queue_start': vaisala_queue_start,
+            'vaisala_queue_end': vaisala_queue_end,
         }
 
     def running(self):
@@ -198,6 +203,7 @@ class OperationsDaemon:
 def spawn_daemon():
     """Spawns the daemon and registers it with Pyro"""
     Pyro4.config.COMMTIMEOUT = PYRO_COMM_TIMEOUT
+    Pyro4.config.DETAILED_TRACEBACK = True
     pyro = Pyro4.Daemon(host=PYRO_HOST, port=PYRO_PORT)
 
     ops = OperationsDaemon()
