@@ -215,9 +215,11 @@ def spawn_daemon():
     ops = OperationsDaemon()
     uri = pyro.register(ops, objectId='ops_daemon')
 
-    print('Starting ops daemon with Pyro ID:', uri)
+    print('{} MESSAGE: Starting ops daemon with Pyro ID: {}' \
+        .format(datetime.datetime.utcnow(), uri))
     pyro.requestLoop(loopCondition=ops.running)
-    print('Stopping ops daemon with Pyro ID:', uri)
+    print('{} MESSAGE: Stopping ops daemon with Pyro ID: {}' \
+        .format(datetime.datetime.utcnow(), uri))
 
 if __name__ == '__main__':
     spawn_daemon()
