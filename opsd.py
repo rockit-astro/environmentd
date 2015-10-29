@@ -178,8 +178,14 @@ class OperationsDaemon:
         if vaisala_queue_end is None or vaisala_queue_end < min_last_date:
             vaisala_sufficient_data = False
 
+        # Can observe only if we have sufficient data and all of the parameters
+        # are within their defined safe limits
+        can_observe = vaisala_sufficient_data and wind.results()[2] and \
+            pressure.results()[2] and vaisala_temp.results()[2] and \
+            vaisala_humidity.results()[2]
+
         return {
-            'can_observe': False,
+            'can_observe': can_observe,
             'vaisala_sufficient_data': vaisala_sufficient_data,
             'wind': wind.results(),
             'pressure': pressure.results(),
