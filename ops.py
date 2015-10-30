@@ -84,12 +84,15 @@ def print_status():
             status['internal_humidity'][0], status['internal_humidity'][1],
             green if status['internal_humidity'][2] else red, bold, clearformat))
 
-        print(u'      Truss Temp.: {0} \u2014 {1} \u2103'.format(
-            status['truss_temp'][0], status['truss_temp'][1]))
-        print(u'     Server Temp.: {0} \u2014 {1} \u2103'.format(
-            status['roomalert_temp'][0], status['roomalert_temp'][1]))
-        print(u'      Server Hum.: {0} \u2014 {1} %RH'.format(
-            status['roomalert_humidity'][0], status['roomalert_humidity'][1]))
+        print(u'      Truss Temp.: {2}{0}{3} \u2014 {2}{1}{3} \u2103'.format(
+            status['truss_temp'][0], status['truss_temp'][1],
+            bold, clearformat))
+        print(u'     Server Temp.: {2}{0}{3} \u2014 {2}{1}{3} \u2103'.format(
+            status['roomalert_temp'][0], status['roomalert_temp'][1],
+            bold, clearformat))
+        print(u'      Server Hum.: {2}{0}{3} \u2014 {2}{1}{3} %RH'.format(
+            status['roomalert_humidity'][0], status['roomalert_humidity'][1],
+            bold, clearformat))
 
         hatch = ""
         if True in status['hatch_open']:
@@ -107,8 +110,8 @@ def print_status():
                 trap += ", "
             trap += "CLOSED"
 
-        print(u'       Side Hatch: '+hatch)
-        print(u'        Trap Door: '+trap)
+        print(u'       Side Hatch: {1}{0}{2}'.format(hatch, bold, clearformat))
+        print(u'        Trap Door: {1}{0}{2}'.format(trap, bold, clearformat))
         print()
 
     return status is None or not status['can_observe']
