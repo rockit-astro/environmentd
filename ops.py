@@ -33,37 +33,84 @@ def print_status():
     else:
         green = u'\033[92m'
         red = u'\033[91m'
-        yellow = u'\033[93m'
         bold = u'\033[1m'
         clearformat = u'\033[0m'
 
-        time_start = datetime.datetime.strptime(
+        vaisala_start = datetime.datetime.strptime(
             status['vaisala_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-        time_end = datetime.datetime.strptime(
+        vaisala_end = datetime.datetime.strptime(
             status['vaisala_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
+
+        roomalert_start = datetime.datetime.strptime(
+            status['roomalert_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
+        roomalert_end = datetime.datetime.strptime(
+            status['roomalert_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
         print('It is {}{}{} to observe'.format(
             green+bold if status['can_observe'] else red+bold,
             'SAFE' if status['can_observe'] else 'NOT SAFE', clearformat))
-        if not status['vaisala_sufficient_data']:
-            print('{}Insufficient external weather history{}'.format(yellow, clearformat))
+        print()
 
-        print(u'Conditions from {2}{0}{3} \u2014 {2}{1}{3}:'.format(
-            time_start.strftime('%H:%M:%S'),
-            time_end.strftime('%H:%M:%S'), bold, clearformat))
+        print(u'Vaisala data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
+            vaisala_start.strftime('%H:%M:%S'), vaisala_end.strftime('%H:%M:%S'),
+            green if status['vaisala_sufficient_data'] else red, bold, clearformat))
         print(u'             Wind: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} km/h'.format(
             status['wind'][0], status['wind'][1],
             green if status['wind'][2] else red, bold, clearformat))
         print(u'         Pressure: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} hPa'.format(
             status['pressure'][0], status['pressure'][1],
             green if status['pressure'][2] else red, bold, clearformat))
-        print(u'    Outside Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
+        print(u'   N2 Plant Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
             status['vaisala_temp'][0], status['vaisala_temp'][1],
             green if status['vaisala_temp'][2] else red, bold, clearformat))
-        print(u'     Outside Hum. {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
+        print(u'    N2 Plant Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
             status['vaisala_humidity'][0], status['vaisala_humidity'][1],
             green if status['vaisala_humidity'][2] else red, bold, clearformat))
         print()
+
+        print(u'RoomAlert data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
+            roomalert_start.strftime('%H:%M:%S'), roomalert_end.strftime('%H:%M:%S'),
+            green if status['roomalert_sufficient_data'] else red, bold, clearformat))
+        print(u'    Outside Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
+            status['external_temp'][0], status['external_temp'][1],
+            green if status['external_temp'][2] else red, bold, clearformat))
+        print(u'     Outside Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
+            status['external_humidity'][0], status['external_humidity'][1],
+            green if status['external_humidity'][2] else red, bold, clearformat))
+        print(u'   Internal Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
+            status['internal_temp'][0], status['internal_temp'][1],
+            green if status['internal_temp'][2] else red, bold, clearformat))
+        print(u'    Internal Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
+            status['internal_humidity'][0], status['internal_humidity'][1],
+            green if status['internal_humidity'][2] else red, bold, clearformat))
+
+        print(u'      Truss Temp.: {0} \u2014 {1} \u2103'.format(
+            status['truss_temp'][0], status['truss_temp'][1]))
+        print(u'     Server Temp.: {0} \u2014 {1} \u2103'.format(
+            status['roomalert_temp'][0], status['roomalert_temp'][1]))
+        print(u'      Server Hum.: {0} \u2014 {1} %RH'.format(
+            status['roomalert_humidity'][0], status['roomalert_humidity'][1]))
+
+        hatch = ""
+        if True in status['hatch_open']:
+            hatch += "OPEN"
+        if False in status['hatch_open']:
+            if len(hatch) > 0:
+                hatch += ", "
+            hatch += "CLOSED"
+
+        trap = ""
+        if True in status['trap_open']:
+            trap += "OPEN"
+        if False in status['trap_open']:
+            if len(trap) > 0:
+                trap += ", "
+            trap += "CLOSED"
+
+        print(u'       Side Hatch: '+hatch)
+        print(u'        Trap Door: '+trap)
+        print()
+
     return status is None or not status['can_observe']
 
 def print_raw():

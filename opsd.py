@@ -19,10 +19,14 @@
    status and weather conditions are aggregated over a time period, and can
    be queried to determine whether it is safe to observe."""
 
+# pylint: disable=too-many-locals
+
 from collections import deque
 import datetime
+import demjson
 import math
 import Pyro4
+import socket
 import threading
 import time
 
@@ -32,7 +36,11 @@ PYRO_PORT = 9002
 PYRO_COMM_TIMEOUT = 5
 VAISALA_DAEMON_URI = 'PYRO:vaisala_daemon@localhost:9001'
 
-# TODO: Include RoomAlert and Power daemons
+ROOMALERT_IP = 'localhost'
+ROOMALERT_PORT = 1234
+ROOMALERT_QUERY_TIMEOUT = 5
+
+# TODO: Include UPS status
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -45,18 +53,52 @@ VAISALA_TEMPERATURE_LIMITS = (0, 50)
 VAISALA_HUMIDITY_LIMITS = (0, 75)
 VAISALA_PRESSURE_LIMITS = (600, 1100)
 
+ROOMALERT_EXT_TEMPERATURE_LIMITS = (0, 50)
+ROOMALERT_EXT_HUMIDITY_LIMITS = (0, 75)
+ROOMALERT_INT_TEMPERATURE_LIMITS = (0, 50)
+ROOMALERT_INT_HUMIDITY_LIMITS = (0, 75)
+
 # Maximum gap that we will accept between measurements (due to query failures,
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
 VAISALA_TIME_GAP_MAX = datetime.timedelta(seconds=30)
+ROOMALERT_TIME_GAP_MAX = datetime.timedelta(seconds=30)
 
-# Delay (in seconds) between queries to the vaisala daemon.
+# Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
+ROOMALERT_QUERY_DELAY = 10
+
+def query_roomalert_json(hostname, port, timeout):
+    """Query json data from the roomalert"""
+    # The Room Alert omits the HTTP header when returning JSON.
+    # This violates the HTTP spec and prevents us from using the
+    # standard query libraries.  We instead speak HTTP ourselves over a socket.
+    try:
+        sock = socket.create_connection((hostname, port), timeout)
+        sock.sendall('GET /getData.htm HTTP/1.0\n\n'.encode('ascii'))
+
+        data = [sock.recv(4096)]
+        while data[-1]:
+            data.append(sock.recv(4096))
+
+    except Exception as exception:
+        raise Exception('Socket error while querying {}: {}'.format(hostname, str(exception)))
+
+    # The first line will either be the JSON we want, or a raw HTTP header
+    response = ''.join(b.decode('ascii') for b in data)
+
+    if response[0] != '{':
+        raise Exception('Unexpected response from {}: {}'.format(hostname, response))
+
+    # The JSON returned by earlier firmwares omits quotes around the keys
+    # This violates the JSON specification, and is not accepted by the
+    # built-in JSON parser.  demjson accepts this invalid input.
+    return demjson.decode(response)
 
 class AggregateMeasurement:
     """A collection of measurements of a specific type over time."""
-    def __init__(self, limits):
+    def __init__(self, limits=(-99999999, 99999999)):
         self._min = 99999999
         self._max = -99999999
         self._count = 0
@@ -95,6 +137,14 @@ class OperationsDaemon:
         vaisala_runloop.daemon = True
         vaisala_runloop.start()
 
+        roomalert_queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
+            1.1 / ROOMALERT_QUERY_DELAY
+        self._roomalert_data = deque(maxlen=math.ceil(roomalert_queue_len))
+
+        roomalert_runloop = threading.Thread(target=self.run_roomalert_thread)
+        roomalert_runloop.daemon = True
+        roomalert_runloop.start()
+
     def run_vaisala_thread(self):
         """Run loop for monitoring the vaisalad daemon"""
         while self._running:
@@ -126,16 +176,9 @@ class OperationsDaemon:
 
             time.sleep(VAISALA_QUERY_DELAY)
 
-    def status(self):
-        """Returns the aggregated status of the monitored daemons.
-           Each measurement is a tuple of min value, max value, measurement valid
-        """
-        # The youngest date that the first measurement can take while remaining valid
-        max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
-
-        # The oldest date that the last measurement can take while remaining valid
-        min_last_date = datetime.datetime.utcnow() - VAISALA_TIME_GAP_MAX
-
+    def vaisala_status(self, max_first_date, min_last_date):
+        """Queries the aggregate status of the vaisala weather station.
+           Returns a tuple of observability and data"""
         wind = AggregateMeasurement(VAISALA_WIND_LIMITS)
         vaisala_temp = AggregateMeasurement(VAISALA_TEMPERATURE_LIMITS)
         vaisala_humidity = AggregateMeasurement(VAISALA_HUMIDITY_LIMITS)
@@ -184,13 +227,12 @@ class OperationsDaemon:
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        can_observe = vaisala_sufficient_data and wind.results()[2] and \
-            pressure.results()[2] and vaisala_temp.results()[2] and \
-            vaisala_humidity.results()[2]
+        can_observe = vaisala_sufficient_data and wind.results()[2] and pressure.results()[2] \
+            and vaisala_temp.results()[2] and vaisala_humidity.results()[2]
 
-        return {
-            'can_observe': can_observe,
+        return (can_observe, {
             'vaisala_sufficient_data': vaisala_sufficient_data,
+
             'wind': wind.results(),
             'pressure': pressure.results(),
             'vaisala_temp': vaisala_temp.results(),
@@ -201,7 +243,155 @@ class OperationsDaemon:
             # Debug info
             'vaisala_queue_len': vaisala_queue_len,
             'vaisala_queue_start': vaisala_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-        }
+        })
+
+    def run_roomalert_thread(self):
+        """Run loop for monitoring the room alert"""
+        while self._running:
+            now = datetime.datetime.utcnow
+
+            # Query the latest measurement
+            # pylint: disable=broad-except
+            try:
+                data = query_roomalert_json(ROOMALERT_IP, ROOMALERT_PORT,
+                                            ROOMALERT_QUERY_TIMEOUT)
+
+                date = datetime.datetime.strptime(data['date'], "%m/%d/%y %H:%M:%S")
+                processed = {
+                    'date': date,
+                    'external_temp': float(data['sensor'][0]['tc']),
+                    'external_humidity': float(data['sensor'][0]['h']),
+                    'internal_temp': float(data['sensor'][1]['tc']),
+                    'internal_humidity': float(data['sensor'][1]['h']),
+
+                    'roomalert_temp': float(data['internal_sen'][0]['tc']),
+                    'roomalert_humidity': float(data['internal_sen'][0]['h']),
+                    'truss_temp': float(data['sensor'][2]['tc']),
+                    'hatch_open': bool(data['s_sen'][0]['stat']),
+                    'trap_open': bool(data['s_sen'][1]['stat']),
+                }
+
+                if now() - date > ROOMALERT_TIME_GAP_MAX:
+                    print('{} WARNING: recieved stale data from RoomAlert: {}' \
+                        .format(now(), data['date']))
+
+                self._roomalert_data.append(processed)
+            except Exception as exception:
+                print('{} ERROR: failed to query from RoomAlert: {}' \
+                      .format(now(), str(exception)))
+            # pylint: enable=broad-except
+
+            time.sleep(ROOMALERT_QUERY_DELAY)
+
+
+    def roomalert_status(self, max_first_date, min_last_date):
+        """Queries the aggregate status of the RoomAlert monitor.
+           Returns a tuple of observability and data"""
+
+        external_temp = AggregateMeasurement(ROOMALERT_EXT_TEMPERATURE_LIMITS)
+        external_humidity = AggregateMeasurement(ROOMALERT_EXT_HUMIDITY_LIMITS)
+        internal_temp = AggregateMeasurement(ROOMALERT_INT_TEMPERATURE_LIMITS)
+        internal_humidity = AggregateMeasurement(ROOMALERT_INT_HUMIDITY_LIMITS)
+
+        # These values are tracked, but not considered for observability
+        roomalert_temp = AggregateMeasurement()
+        roomalert_humidity = AggregateMeasurement()
+        truss_temp = AggregateMeasurement()
+        hatch_open = set()
+        trap_open = set()
+
+        roomalert_measurement_start = None
+        roomalert_measurement_end = None
+        roomalert_queue_start = None
+        roomalert_queue_len = 0
+        roomalert_sufficient_data = True
+
+        # deque is threadsafe, so we don't need an explicit lock
+        for measurement in self._roomalert_data:
+            roomalert_queue_len += 1
+            date = measurement['date']
+
+            # This is the first measurement with a valid date
+            if roomalert_queue_start is None:
+                roomalert_queue_start = date
+
+            if roomalert_measurement_end is None:
+                roomalert_measurement_end = date
+
+            # Only include measurements within the desired window
+            if date > max_first_date:
+                if roomalert_measurement_start is None:
+                    roomalert_measurement_start = date
+
+                if date - roomalert_measurement_end > ROOMALERT_TIME_GAP_MAX:
+                    roomalert_sufficient_data = False
+
+                external_temp.add(measurement['external_temp'])
+                external_humidity.add(measurement['external_humidity'])
+                internal_temp.add(measurement['internal_temp'])
+                internal_humidity.add(measurement['internal_humidity'])
+
+                roomalert_temp.add(measurement['roomalert_temp'])
+                roomalert_humidity.add(measurement['roomalert_humidity'])
+                truss_temp.add(measurement['truss_temp'])
+                hatch_open.add(measurement['hatch_open'])
+                trap_open.add(measurement['trap_open'])
+
+            roomalert_measurement_end = date
+
+        # Check that the first measurement was sufficiently old
+        if roomalert_queue_start is None or roomalert_queue_start > max_first_date:
+            roomalert_sufficient_data = False
+
+        # Check the time between the last measurement and now
+        if roomalert_measurement_end is None or roomalert_measurement_end < min_last_date:
+            roomalert_sufficient_data = False
+
+        # Can observe only if we have sufficient data and all of the parameters
+        # are within their defined safe limits
+        can_observe = roomalert_sufficient_data and external_temp.results()[2] and \
+            external_humidity.results()[2] and internal_temp.results()[2] and \
+            internal_humidity.results()[2]
+
+        return (can_observe, {
+            'roomalert_sufficient_data': roomalert_sufficient_data,
+
+            'external_temp': external_temp.results(),
+            'external_humidity': external_humidity.results(),
+            'internal_temp': internal_temp.results(),
+            'internal_humidity': internal_humidity.results(),
+            'roomalert_temp': roomalert_temp.results(),
+            'roomalert_humidity': roomalert_humidity.results(),
+            'truss_temp': truss_temp.results(),
+            'hatch_open': hatch_open,
+            'trap_open': trap_open,
+            'roomalert_measurement_start':
+                roomalert_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'roomalert_measurement_end':
+                roomalert_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+
+            # Debug info
+            'roomalert_queue_len': roomalert_queue_len,
+            'roomalert_queue_start': roomalert_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        })
+
+    def status(self):
+        """Returns the aggregated status of the monitored daemons.
+           Each measurement is a tuple of min value, max value, measurement valid
+        """
+        # The youngest date that the first measurement can take while remaining valid
+        max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
+
+        # The oldest date that the last measurement can take while remaining valid
+        min_last_date = datetime.datetime.utcnow() - VAISALA_TIME_GAP_MAX
+
+        vaisala_can_observe, vaisala_data = self.vaisala_status(max_first_date, min_last_date)
+        roomalert_can_observe, roomalert_data = self.roomalert_status(max_first_date, min_last_date)
+
+        ret = {'can_observe': vaisala_can_observe and roomalert_can_observe}
+        ret.update(vaisala_data)
+        ret.update(roomalert_data)
+        return ret
 
     def running(self):
         """Returns false if the daemon should be terminated"""
