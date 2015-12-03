@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 #
-# This file is part of opsd.
+# This file is part of environmentd.
 #
-# opsd is free software: you can redistribute it and/or modify
+# environmentd is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# opsd is distributed in the hope that it will be useful,
+# environmentd is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with opsd.  If not, see <http://www.gnu.org/licenses/>.
+# along with environmentd.  If not, see <http://www.gnu.org/licenses/>.
 
 """Daemon process for monitoring the low-level hardware daemons.  Hardware
    status and weather conditions are aggregated over a time period, and can
@@ -120,7 +120,7 @@ class AggregateMeasurement:
         valid = self._min > self._limit_min and self._max < self._limit_max
         return (self._min, self._max, valid)
 
-class OperationsDaemon:
+class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
 
     def __init__(self):
@@ -413,13 +413,13 @@ def spawn_daemon():
     Pyro4.config.DETAILED_TRACEBACK = True
     pyro = Pyro4.Daemon(host=PYRO_HOST, port=PYRO_PORT)
 
-    ops = OperationsDaemon()
-    uri = pyro.register(ops, objectId='ops_daemon')
+    environment = EnvironmentDaemon()
+    uri = pyro.register(environment, objectId='environment_daemon')
 
-    print('{} MESSAGE: Starting ops daemon with Pyro ID: {}' \
+    print('{} MESSAGE: Starting environment daemon with Pyro ID: {}' \
         .format(datetime.datetime.utcnow(), uri))
-    pyro.requestLoop(loopCondition=ops.running)
-    print('{} MESSAGE: Stopping ops daemon with Pyro ID: {}' \
+    pyro.requestLoop(loopCondition=environment.running)
+    print('{} MESSAGE: Stopping environment daemon with Pyro ID: {}' \
         .format(datetime.datetime.utcnow(), uri))
 
 if __name__ == '__main__':
