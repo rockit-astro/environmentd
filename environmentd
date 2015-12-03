@@ -230,20 +230,24 @@ class EnvironmentDaemon:
         can_observe = vaisala_sufficient_data and wind.results()[2] and pressure.results()[2] \
             and vaisala_temp.results()[2] and vaisala_humidity.results()[2]
 
-        return (can_observe, {
+        data = {
             'vaisala_sufficient_data': vaisala_sufficient_data,
+            'vaisala_queue_len': vaisala_queue_len
+        }
 
-            'wind': wind.results(),
-            'pressure': pressure.results(),
-            'vaisala_temp': vaisala_temp.results(),
-            'vaisala_humidity': vaisala_humidity.results(),
-            'vaisala_measurement_start': vaisala_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'vaisala_measurement_end': vaisala_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        if vaisala_queue_len > 0:
+            data.update({
+                'wind': wind.results(),
+                'pressure': pressure.results(),
+                'vaisala_temp': vaisala_temp.results(),
+                'vaisala_humidity': vaisala_humidity.results(),
+                'vaisala_measurement_start': vaisala_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'vaisala_measurement_end': vaisala_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
-            # Debug info
-            'vaisala_queue_len': vaisala_queue_len,
-            'vaisala_queue_start': vaisala_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-        })
+                'vaisala_queue_start': vaisala_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+            })
+
+        return (can_observe, data)
 
     def run_roomalert_thread(self):
         """Run loop for monitoring the room alert"""
@@ -353,27 +357,31 @@ class EnvironmentDaemon:
             external_humidity.results()[2] and internal_temp.results()[2] and \
             internal_humidity.results()[2]
 
-        return (can_observe, {
+        data = {
             'roomalert_sufficient_data': roomalert_sufficient_data,
+            'roomalert_queue_len': roomalert_queue_len
+        }
 
-            'external_temp': external_temp.results(),
-            'external_humidity': external_humidity.results(),
-            'internal_temp': internal_temp.results(),
-            'internal_humidity': internal_humidity.results(),
-            'roomalert_temp': roomalert_temp.results(),
-            'roomalert_humidity': roomalert_humidity.results(),
-            'truss_temp': truss_temp.results(),
-            'hatch_open': hatch_open,
-            'trap_open': trap_open,
-            'roomalert_measurement_start':
-                roomalert_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'roomalert_measurement_end':
-                roomalert_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        if roomalert_queue_len > 0:
+            data.update({
+                'external_temp': external_temp.results(),
+                'external_humidity': external_humidity.results(),
+                'internal_temp': internal_temp.results(),
+                'internal_humidity': internal_humidity.results(),
+                'roomalert_temp': roomalert_temp.results(),
+                'roomalert_humidity': roomalert_humidity.results(),
+                'truss_temp': truss_temp.results(),
+                'hatch_open': hatch_open,
+                'trap_open': trap_open,
+                'roomalert_measurement_start':
+                    roomalert_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'roomalert_measurement_end':
+                    roomalert_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
-            # Debug info
-            'roomalert_queue_len': roomalert_queue_len,
-            'roomalert_queue_start': roomalert_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-        })
+                'roomalert_queue_start': roomalert_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+            })
+
+        return (can_observe, data)
 
     def status(self):
         """Returns the aggregated status of the monitored daemons.
