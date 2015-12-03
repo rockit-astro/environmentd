@@ -271,8 +271,8 @@ class EnvironmentDaemon:
                     'roomalert_temp': float(data['internal_sen'][0]['tc']),
                     'roomalert_humidity': float(data['internal_sen'][0]['h']),
                     'truss_temp': float(data['sensor'][2]['tc']),
-                    'hatch_open': bool(data['s_sen'][0]['stat']),
-                    'trap_open': bool(data['s_sen'][1]['stat']),
+                    'hatch_closed': bool(data['s_sen'][0]['stat']),
+                    'trap_closed': bool(data['s_sen'][1]['stat']),
                 }
 
                 if now() - date > ROOMALERT_TIME_GAP_MAX:
@@ -301,8 +301,8 @@ class EnvironmentDaemon:
         roomalert_temp = AggregateMeasurement()
         roomalert_humidity = AggregateMeasurement()
         truss_temp = AggregateMeasurement()
-        hatch_open = set()
-        trap_open = set()
+        hatch_closed = set()
+        trap_closed = set()
 
         roomalert_measurement_start = None
         roomalert_measurement_end = None
@@ -338,8 +338,8 @@ class EnvironmentDaemon:
                 roomalert_temp.add(measurement['roomalert_temp'])
                 roomalert_humidity.add(measurement['roomalert_humidity'])
                 truss_temp.add(measurement['truss_temp'])
-                hatch_open.add(measurement['hatch_open'])
-                trap_open.add(measurement['trap_open'])
+                hatch_closed.add(measurement['hatch_closed'])
+                trap_closed.add(measurement['trap_closed'])
 
             roomalert_measurement_end = date
 
@@ -371,8 +371,8 @@ class EnvironmentDaemon:
                 'roomalert_temp': roomalert_temp.results(),
                 'roomalert_humidity': roomalert_humidity.results(),
                 'truss_temp': truss_temp.results(),
-                'hatch_open': hatch_open,
-                'trap_open': trap_open,
+                'hatch_closed': hatch_closed,
+                'trap_closed': trap_closed,
                 'roomalert_measurement_start':
                     roomalert_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'roomalert_measurement_end':

@@ -30,8 +30,8 @@ INTERNAL_TEMP = (15, 25)
 INTERNAL_HUMIDITY = (60, 80)
 TRUSS_TEMP = (15, 25)
 ON_BATTERY = False
-HATCH_OPEN = True
-TRAP_OPEN = False
+HATCH_CLOSED = True
+TRAP_CLOSED = False
 
 DATA_TEMPLATE = '{{"name":"SAFT Dome","date":"{}","uptime":"{}","scale":1,'\
     '"macaddr":"00:20:4A:F0:AB:DC","devtype":"32","refresh":"60","channel":"12",'\
@@ -232,7 +232,7 @@ def spawn_server():
 
             params = (date, uptime(), ip) + ra.values() + (0 if ON_BATTERY else 1,) + \
                 external.values() + internal.values() + truss.values() + \
-                (1 if HATCH_OPEN else 0, 1 if TRAP_OPEN else 0)
+                (1 if HATCH_CLOSED else 0, 1 if TRAP_CLOSED else 0)
 
             response = DATA_TEMPLATE.format(*params)
             conn.sendall(response.encode('ascii'))

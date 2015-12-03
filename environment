@@ -100,17 +100,17 @@ def print_status():
                 bold, clearformat))
 
             hatch = ""
-            if True in status['hatch_open']:
+            if False in status['hatch_closed']:
                 hatch += "OPEN"
-            if False in status['hatch_open']:
+            if True in status['hatch_closed']:
                 if len(hatch) > 0:
                     hatch += ", "
                 hatch += "CLOSED"
 
             trap = ""
-            if True in status['trap_open']:
+            if False in status['trap_closed']:
                 trap += "OPEN"
-            if False in status['trap_open']:
+            if True in status['trap_closed']:
                 if len(trap) > 0:
                     trap += ", "
                 trap += "CLOSED"
