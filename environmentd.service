@@ -1,0 +1,12 @@
+[Unit]
+Description=Daemon for exposing recent dome environment conditions via Pyro.
+After=syslog.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/environmentd
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
