@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
 #
-# This file is part of vaisalad.
+# This file is part of environmentd.
 #
-# vaisalad is free software: you can redistribute it and/or modify
+# environmentd is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# vaisalad is distributed in the hope that it will be useful,
+# environmentd is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with vaisalad.  If not, see <http://www.gnu.org/licenses/>.
+# along with environmentd.  If not, see <http://www.gnu.org/licenses/>.
 
 import distutils.core
 
-distutils.core.setup(name='environmentd',
+distutils.core.setup(name='onemetre-environmentd',
     version='1.0',
     author="Paul Chote",
     author_email="P.Chote@warwick.ac.uk",
-    url="https://github.com/warwick-one-metre/vaisalad",
+    url="https://github.com/warwick-one-metre/environmentd",
     description="Daemon for exposing recent dome environment conditions via Pyro.",
     long_description="Daemon for exposing recent dome environment conditions via Pyro.",
     license="GPL3",
@@ -29,7 +29,7 @@ distutils.core.setup(name='environmentd',
     options = {'bdist_rpm': {
       'post_install' : 'postinstall.sh',
       'group' : 'Unspecified',
-      'requires' : 'python3'
+      'requires' : 'python3, onemetre-vaisalad'
     }},
 
     scripts=['environmentd', 'environment'],
