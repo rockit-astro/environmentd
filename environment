@@ -23,6 +23,10 @@ import sys
 import Pyro4
 
 DAEMON_URI = 'PYRO:environment_daemon@localhost:9002'
+FMT_GREEN = u'\033[92m'
+FMT_RED = u'\033[91m'
+FMT_BOLD = u'\033[1m'
+FMT_CLEAR = u'\033[0m'
 
 def print_status():
     """Prints the latest status data in human-readable form"""
@@ -31,41 +35,28 @@ def print_status():
     if status is None:
         print('No data available')
     else:
-        green = u'\033[92m'
-        red = u'\033[91m'
-        bold = u'\033[1m'
-        clearformat = u'\033[0m'
-
         print('It is {}{}{} to observe'.format(
-            green+bold if status['can_observe'] else red+bold,
-            'SAFE' if status['can_observe'] else 'NOT SAFE', clearformat))
+            FMT_GREEN + FMT_BOLD if status['can_observe'] else FMT_RED + FMT_BOLD,
+            'SAFE' if status['can_observe'] else 'NOT SAFE', FMT_CLEAR))
         print()
 
         if status['vaisala_queue_len'] > 0:
             vaisala_start = datetime.datetime.strptime(
                 status['vaisala_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-
             vaisala_end = datetime.datetime.strptime(
                 status['vaisala_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
-            print(u'Vaisala data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
-                vaisala_start.strftime('%H:%M:%S'), vaisala_end.strftime('%H:%M:%S'),
-                green if status['vaisala_sufficient_data'] else red, bold, clearformat))
-            print(u'             Wind: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} km/h'.format(
-                status['wind'][0], status['wind'][1],
-                green if status['wind'][2] else red, bold, clearformat))
-            print(u'         Pressure: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} hPa'.format(
-                status['pressure'][0], status['pressure'][1],
-                green if status['pressure'][2] else red, bold, clearformat))
-            print(u'   N2 Plant Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
-                status['vaisala_temp'][0], status['vaisala_temp'][1],
-                green if status['vaisala_temp'][2] else red, bold, clearformat))
-            print(u'    N2 Plant Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
-                status['vaisala_humidity'][0], status['vaisala_humidity'][1],
-                green if status['vaisala_humidity'][2] else red, bold, clearformat))
+            vaisala_data = (vaisala_start.strftime('%H:%M:%S'),
+                            vaisala_end.strftime('%H:%M:%S'),
+                            status['vaisala_sufficient_data'])
+            print(u'Vaisala data from ' + format_range(vaisala_data) + ':')
+            print(u'             Wind: ' + format_range(status['wind']) + ' km/h')
+            print(u'         Pressure: ' + format_range(status['pressure']) + ' hPa')
+            print(u'   N2 Plant Temp.: ' + format_range(status['vaisala_temp']) + ' \u2103')
+            print(u'    N2 Plant Hum.: ' + format_range(status['vaisala_humidity']) + ' %RH')
             print()
         else:
-            print(u'{0}{1} No Vaisala data available{2}'.format(red, bold, clearformat))
+            print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
 
         if status['roomalert_queue_len'] > 0:
             roomalert_start = datetime.datetime.strptime(
@@ -73,52 +64,24 @@ def print_status():
             roomalert_end = datetime.datetime.strptime(
                 status['roomalert_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
-            print(u'RoomAlert data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
-                roomalert_start.strftime('%H:%M:%S'), roomalert_end.strftime('%H:%M:%S'),
-                green if status['roomalert_sufficient_data'] else red, bold, clearformat))
-            print(u'    Outside Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
-                status['external_temp'][0], status['external_temp'][1],
-                green if status['external_temp'][2] else red, bold, clearformat))
-            print(u'     Outside Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
-                status['external_humidity'][0], status['external_humidity'][1],
-                green if status['external_humidity'][2] else red, bold, clearformat))
-            print(u'   Internal Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
-                status['internal_temp'][0], status['internal_temp'][1],
-                green if status['internal_temp'][2] else red, bold, clearformat))
-            print(u'    Internal Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
-                status['internal_humidity'][0], status['internal_humidity'][1],
-                green if status['internal_humidity'][2] else red, bold, clearformat))
-
-            print(u'      Truss Temp.: {2}{0}{3} \u2014 {2}{1}{3} \u2103'.format(
-                status['truss_temp'][0], status['truss_temp'][1],
-                bold, clearformat))
-            print(u'     Server Temp.: {2}{0}{3} \u2014 {2}{1}{3} \u2103'.format(
-                status['roomalert_temp'][0], status['roomalert_temp'][1],
-                bold, clearformat))
-            print(u'      Server Hum.: {2}{0}{3} \u2014 {2}{1}{3} %RH'.format(
-                status['roomalert_humidity'][0], status['roomalert_humidity'][1],
-                bold, clearformat))
-
-            hatch = ""
-            if False in status['hatch_closed']:
-                hatch += "OPEN"
-            if True in status['hatch_closed']:
-                if len(hatch) > 0:
-                    hatch += ", "
-                hatch += "CLOSED"
-
-            trap = ""
-            if False in status['trap_closed']:
-                trap += "OPEN"
-            if True in status['trap_closed']:
-                if len(trap) > 0:
-                    trap += ", "
-                trap += "CLOSED"
-
-            print(u'       Side Hatch: {1}{0}{2}'.format(hatch, bold, clearformat))
-            print(u'        Trap Door: {1}{0}{2}'.format(trap, bold, clearformat))
+            roomalert_data = (roomalert_start.strftime('%H:%M:%S'),
+                              roomalert_end.strftime('%H:%M:%S'),
+                              status['roomalert_sufficient_data'])
+            print(u'RoomAlert data from ' + format_range(roomalert_data) + ':')
+            print(u'    Outside Temp.: ' + format_range(status['external_temp']) + ' \u2103')
+            print(u'     Outside Hum.: ' + format_range(status['external_humidity']))
+            print(u'   Internal Temp.: ' + format_range(status['internal_temp']) + ' \u2103')
+            print(u'    Internal Hum.: ' + format_range(status['internal_humidity']) + ' %RH')
+            print(u'      Truss Temp.: ' + format_range(status['truss_temp'], color=False)\
+                + ' \u2103')
+            print(u'     Server Temp.: ' + format_range(status['roomalert_temp'], color=False)\
+                + ' \u2103')
+            print(u'      Server Hum.: ' + format_range(status['roomalert_humidity'], color=False)\
+                + ' %RH')
+            print(u'       Side Hatch: ' + format_open_closed(status['hatch_closed']))
+            print(u'        Trap Door: ' + format_open_closed(status['trap_closed']))
         else:
-            print(u'{0}{1} No Room Alert data available{2}'.format(red, bold, clearformat))
+            print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
         print()
 
         if status['superwasp_queue_len'] > 0:
@@ -127,28 +90,41 @@ def print_status():
             superwasp_end = datetime.datetime.strptime(
                 status['superwasp_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
-            print(u'SuperWASP data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
-                superwasp_start.strftime('%H:%M:%S'), superwasp_end.strftime('%H:%M:%S'),
-                green if status['superwasp_sufficient_data'] else red, bold, clearformat))
-            print(u'     Outside Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
-                status['superwasp_ext_humidity'][0], status['superwasp_ext_humidity'][1],
-                green if status['superwasp_ext_humidity'][2] else red, bold, clearformat))
-            print(u'     (-)Sky Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
-                -status['superwasp_sky_temp'][0], -status['superwasp_sky_temp'][1],
-                green if status['superwasp_sky_temp'][2] else red, bold, clearformat))
-            print(u'  Temp. > Dew Pt.: {2}{3}{0:.2f}{4}{2} \u2014 {2}{3}{1:.2f}{4} \u2103'.format(
-                status['superwasp_dew_point_delta'][0], status['superwasp_dew_point_delta'][1],
-                green if status['superwasp_dew_point_delta'][2] else red, bold, clearformat))
+            superwasp_data = (superwasp_start.strftime('%H:%M:%S'),
+                              superwasp_end.strftime('%H:%M:%S'),
+                              status['superwasp_sufficient_data'])
+            print(u'SuperWASP data from ' + format_range(superwasp_data) + ':')
+            print(u'     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'])\
+                + ' %RH')
+            print(u'        Sky Temp.: ' + format_range(status['superwasp_sky_temp']) + '\u2103')
+            print(u'  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'], '.2f')\
+                + '\u2103')
         else:
-            print(u'{0}{1} No SuperWASP data available{2}'.format(red, bold, clearformat))
-
+            print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
     return status is None or not status['can_observe']
+
+def format_range(data, fmt=None, color=True):
+    """Builds a formatted string with a value range"""
+    fmt = '' if fmt is None else ':' + fmt
+    fmt = '{2}{3}{0' + fmt + '}{4}{2} \u2014 {2}{3}{1' + fmt + '}{4}'
+    color_fmt = '' if not color else FMT_GREEN if data[2] else FMT_RED
+    return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR)
+
+def format_open_closed(data):
+    """Builds a formatted string with OPEN and/or CLOSED"""
+    string = ""
+    if False in data:
+        string += "OPEN"
+    if True in data:
+        if len(string) > 0:
+            string += ", "
+        string += "CLOSED"
+    return FMT_BOLD + string + FMT_CLEAR
 
 def print_raw():
     """Prints the latest status data in machine-readable form"""
     status = Pyro4.Proxy(DAEMON_URI).status()
-    print(status)
     return status is None or not status['can_observe']
 
 def print_usage(name):
