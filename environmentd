@@ -23,12 +23,12 @@
 
 from collections import deque
 import datetime
-import demjson
 import math
-import Pyro4
 import socket
 import threading
 import time
+import demjson
+import Pyro4
 
 # Settings for this daemon
 PYRO_HOST = 'localhost'
@@ -120,34 +120,23 @@ class AggregateMeasurement:
         valid = self._min > self._limit_min and self._max < self._limit_max
         return (self._min, self._max, valid)
 
-class EnvironmentDaemon:
-    """Daemon class for communicating with the lower level hardware daemons"""
+class VaisalaWatcher:
+    """Tracks the state of the remote Vaisala daemon"""
 
     def __init__(self):
-        self._lock = threading.Lock()
-        self._running = True
-
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
-        vaisala_queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
+        queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
             1.1 / VAISALA_QUERY_DELAY
-        self._vaisala_data = deque(maxlen=math.ceil(vaisala_queue_len))
+        self._data = deque(maxlen=math.ceil(queue_len))
 
-        vaisala_runloop = threading.Thread(target=self.run_vaisala_thread)
-        vaisala_runloop.daemon = True
-        vaisala_runloop.start()
+        runloop = threading.Thread(target=self.__run_thread)
+        runloop.daemon = True
+        runloop.start()
 
-        roomalert_queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
-            1.1 / ROOMALERT_QUERY_DELAY
-        self._roomalert_data = deque(maxlen=math.ceil(roomalert_queue_len))
-
-        roomalert_runloop = threading.Thread(target=self.run_roomalert_thread)
-        roomalert_runloop.daemon = True
-        roomalert_runloop.start()
-
-    def run_vaisala_thread(self):
+    def __run_thread(self):
         """Run loop for monitoring the vaisalad daemon"""
-        while self._running:
+        while True:
             now = datetime.datetime.utcnow
 
             # Query the latest measurement
@@ -165,7 +154,7 @@ class EnvironmentDaemon:
                         print('{} WARNING: recieved stale data from vaisalad: {}' \
                         .format(now(), data['date']))
 
-                    self._vaisala_data.append(data)
+                    self._data.append(data)
                 else:
                     print('{} WARNING: recieved empty data from vaisalad' \
                         .format(now()))
@@ -176,7 +165,7 @@ class EnvironmentDaemon:
 
             time.sleep(VAISALA_QUERY_DELAY)
 
-    def vaisala_status(self, max_first_date, min_last_date):
+    def status(self, max_first_date, min_last_date):
         """Queries the aggregate status of the vaisala weather station.
            Returns a tuple of observability and data"""
         wind = AggregateMeasurement(VAISALA_WIND_LIMITS)
@@ -184,74 +173,90 @@ class EnvironmentDaemon:
         vaisala_humidity = AggregateMeasurement(VAISALA_HUMIDITY_LIMITS)
         pressure = AggregateMeasurement(VAISALA_PRESSURE_LIMITS)
 
-        vaisala_measurement_start = None
-        vaisala_measurement_end = None
-        vaisala_queue_start = None
-        vaisala_queue_len = 0
-        vaisala_sufficient_data = True
+        measurement_start = None
+        measurement_end = None
+        queue_start = None
+        queue_len = 0
+        sufficient_data = True
 
         # deque is threadsafe, so we don't need an explicit lock
-        for measurement in self._vaisala_data:
-            vaisala_queue_len += 1
+        for measurement in self._data:
+            queue_len += 1
             date = measurement['date']
 
             # This is the first measurement with a valid date
-            if vaisala_queue_start is None:
-                vaisala_queue_start = date
+            if queue_start is None:
+                queue_start = date
 
-            if vaisala_measurement_end is None:
-                vaisala_measurement_end = date
+            if measurement_end is None:
+                measurement_end = date
 
             # Only include measurements within the desired window
             if date > max_first_date:
-                if vaisala_measurement_start is None:
-                    vaisala_measurement_start = date
+                if measurement_start is None:
+                    measurement_start = date
 
-                if date - vaisala_measurement_end > VAISALA_TIME_GAP_MAX:
-                    vaisala_sufficient_data = False
+                if date - measurement_end > VAISALA_TIME_GAP_MAX:
+                    sufficient_data = False
 
                 wind.add(measurement['wind_speed'])
                 vaisala_temp.add(measurement['temperature'])
                 vaisala_humidity.add(measurement['relative_humidity'])
                 pressure.add(measurement['pressure'])
 
-            vaisala_measurement_end = date
+            measurement_end = date
 
         # Check that the first measurement was sufficiently old
-        if vaisala_queue_start is None or vaisala_queue_start > max_first_date:
-            vaisala_sufficient_data = False
+        if queue_start is None or queue_start > max_first_date:
+            sufficient_data = False
 
         # Check the time between the last measurement and now
-        if vaisala_measurement_end is None or vaisala_measurement_end < min_last_date:
-            vaisala_sufficient_data = False
+        if measurement_end is None or measurement_end < min_last_date:
+            sufficient_data = False
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        can_observe = vaisala_sufficient_data and wind.results()[2] and pressure.results()[2] \
+        can_observe = sufficient_data and wind.results()[2] and pressure.results()[2] \
             and vaisala_temp.results()[2] and vaisala_humidity.results()[2]
 
         data = {
-            'vaisala_sufficient_data': vaisala_sufficient_data,
-            'vaisala_queue_len': vaisala_queue_len
+            'vaisala_sufficient_data': sufficient_data,
+            'vaisala_queue_len': queue_len
         }
 
-        if vaisala_queue_len > 0:
+        if queue_len > 0:
             data.update({
                 'wind': wind.results(),
                 'pressure': pressure.results(),
                 'vaisala_temp': vaisala_temp.results(),
                 'vaisala_humidity': vaisala_humidity.results(),
-                'vaisala_measurement_start': vaisala_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'vaisala_measurement_end': vaisala_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'vaisala_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'vaisala_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
-                'vaisala_queue_start': vaisala_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+                'vaisala_queue_start': queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             })
 
         return (can_observe, data)
 
-    def run_roomalert_thread(self):
+    def clear_history(self):
+        """Clear the cached measurements"""
+        self._data.clear()
+
+class RoomAlertWatcher:
+    """Tracks the state of the Room Alert"""
+
+    def __init__(self):
+        queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
+            1.1 / ROOMALERT_QUERY_DELAY
+        self._data = deque(maxlen=math.ceil(queue_len))
+
+        runloop = threading.Thread(target=self.__run_thread)
+        runloop.daemon = True
+        runloop.start()
+
+    def __run_thread(self):
         """Run loop for monitoring the room alert"""
-        while self._running:
+        while True:
             now = datetime.datetime.utcnow
 
             # Query the latest measurement
@@ -279,7 +284,7 @@ class EnvironmentDaemon:
                     print('{} WARNING: recieved stale data from RoomAlert: {}' \
                         .format(now(), data['date']))
 
-                self._roomalert_data.append(processed)
+                self._data.append(processed)
             except Exception as exception:
                 print('{} ERROR: failed to query from RoomAlert: {}' \
                       .format(now(), str(exception)))
@@ -287,8 +292,7 @@ class EnvironmentDaemon:
 
             time.sleep(ROOMALERT_QUERY_DELAY)
 
-
-    def roomalert_status(self, max_first_date, min_last_date):
+    def status(self, max_first_date, min_last_date):
         """Queries the aggregate status of the RoomAlert monitor.
            Returns a tuple of observability and data"""
 
@@ -304,31 +308,31 @@ class EnvironmentDaemon:
         hatch_closed = set()
         trap_closed = set()
 
-        roomalert_measurement_start = None
-        roomalert_measurement_end = None
-        roomalert_queue_start = None
-        roomalert_queue_len = 0
-        roomalert_sufficient_data = True
+        measurement_start = None
+        measurement_end = None
+        queue_start = None
+        queue_len = 0
+        sufficient_data = True
 
         # deque is threadsafe, so we don't need an explicit lock
-        for measurement in self._roomalert_data:
-            roomalert_queue_len += 1
+        for measurement in self._data:
+            queue_len += 1
             date = measurement['date']
 
             # This is the first measurement with a valid date
-            if roomalert_queue_start is None:
-                roomalert_queue_start = date
+            if queue_start is None:
+                queue_start = date
 
-            if roomalert_measurement_end is None:
-                roomalert_measurement_end = date
+            if measurement_end is None:
+                measurement_end = date
 
             # Only include measurements within the desired window
             if date > max_first_date:
-                if roomalert_measurement_start is None:
-                    roomalert_measurement_start = date
+                if measurement_start is None:
+                    measurement_start = date
 
-                if date - roomalert_measurement_end > ROOMALERT_TIME_GAP_MAX:
-                    roomalert_sufficient_data = False
+                if date - measurement_end > ROOMALERT_TIME_GAP_MAX:
+                    sufficient_data = False
 
                 external_temp.add(measurement['external_temp'])
                 external_humidity.add(measurement['external_humidity'])
@@ -341,28 +345,28 @@ class EnvironmentDaemon:
                 hatch_closed.add(measurement['hatch_closed'])
                 trap_closed.add(measurement['trap_closed'])
 
-            roomalert_measurement_end = date
+            measurement_end = date
 
         # Check that the first measurement was sufficiently old
-        if roomalert_queue_start is None or roomalert_queue_start > max_first_date:
-            roomalert_sufficient_data = False
+        if queue_start is None or queue_start > max_first_date:
+            sufficient_data = False
 
         # Check the time between the last measurement and now
-        if roomalert_measurement_end is None or roomalert_measurement_end < min_last_date:
-            roomalert_sufficient_data = False
+        if measurement_end is None or measurement_end < min_last_date:
+            sufficient_data = False
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        can_observe = roomalert_sufficient_data and external_temp.results()[2] and \
+        can_observe = sufficient_data and external_temp.results()[2] and \
             external_humidity.results()[2] and internal_temp.results()[2] and \
             internal_humidity.results()[2]
 
         data = {
-            'roomalert_sufficient_data': roomalert_sufficient_data,
-            'roomalert_queue_len': roomalert_queue_len
+            'roomalert_sufficient_data': sufficient_data,
+            'roomalert_queue_len': queue_len
         }
 
-        if roomalert_queue_len > 0:
+        if queue_len > 0:
             data.update({
                 'external_temp': external_temp.results(),
                 'external_humidity': external_humidity.results(),
@@ -373,15 +377,27 @@ class EnvironmentDaemon:
                 'truss_temp': truss_temp.results(),
                 'hatch_closed': hatch_closed,
                 'trap_closed': trap_closed,
-                'roomalert_measurement_start':
-                    roomalert_measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'roomalert_measurement_end':
-                    roomalert_measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'roomalert_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'roomalert_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
-                'roomalert_queue_start': roomalert_queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+                'roomalert_queue_start': queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             })
 
         return (can_observe, data)
+
+    def clear_history(self):
+        """Clear the cached measurements"""
+        self._data.clear()
+
+class EnvironmentDaemon:
+    """Daemon class for communicating with the lower level hardware daemons"""
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._running = True
+        self._vaisala = VaisalaWatcher()
+        self._roomalert = RoomAlertWatcher()
+
 
     def status(self):
         """Returns the aggregated status of the monitored daemons.
@@ -393,10 +409,10 @@ class EnvironmentDaemon:
         # The oldest date that the last measurement can take while remaining valid
         min_last_date = datetime.datetime.utcnow() - VAISALA_TIME_GAP_MAX
 
-        vaisala_can_observe, vaisala_data = self.vaisala_status(max_first_date, min_last_date)
-        roomalert_can_observe, roomalert_data = self.roomalert_status(max_first_date, min_last_date)
+        vaisala_observe, vaisala_data = self._vaisala.status(max_first_date, min_last_date)
+        roomalert_observe, roomalert_data = self._roomalert.status(max_first_date, min_last_date)
 
-        ret = {'can_observe': vaisala_can_observe and roomalert_can_observe}
+        ret = {'can_observe': vaisala_observe and roomalert_observe}
         ret.update(vaisala_data)
         ret.update(roomalert_data)
         return ret
@@ -413,7 +429,8 @@ class EnvironmentDaemon:
         """Clear the cached measurements"""
         print('{} MESSAGE: clearing cached history' \
             .format(datetime.datetime.utcnow()))
-        self._vaisala_data.clear()
+        self._vaisala.clear_history()
+        self._roomalert.clear_history()
 
 def spawn_daemon():
     """Spawns the daemon and registers it with Pyro"""
