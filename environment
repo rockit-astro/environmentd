@@ -19,8 +19,8 @@
 
 import datetime
 import os
-import Pyro4
 import sys
+import Pyro4
 
 DAEMON_URI = 'PYRO:environment_daemon@localhost:9002'
 
@@ -35,7 +35,7 @@ def print_status():
         red = u'\033[91m'
         bold = u'\033[1m'
         clearformat = u'\033[0m'
-        
+
         print('It is {}{}{} to observe'.format(
             green+bold if status['can_observe'] else red+bold,
             'SAFE' if status['can_observe'] else 'NOT SAFE', clearformat))
@@ -44,7 +44,7 @@ def print_status():
         if status['vaisala_queue_len'] > 0:
             vaisala_start = datetime.datetime.strptime(
                 status['vaisala_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-			
+
             vaisala_end = datetime.datetime.strptime(
                 status['vaisala_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
@@ -119,6 +119,28 @@ def print_status():
             print(u'        Trap Door: {1}{0}{2}'.format(trap, bold, clearformat))
         else:
             print(u'{0}{1} No Room Alert data available{2}'.format(red, bold, clearformat))
+        print()
+
+        if status['superwasp_queue_len'] > 0:
+            superwasp_start = datetime.datetime.strptime(
+                status['superwasp_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
+            superwasp_end = datetime.datetime.strptime(
+                status['superwasp_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
+
+            print(u'SuperWASP data from {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4}:'.format(
+                superwasp_start.strftime('%H:%M:%S'), superwasp_end.strftime('%H:%M:%S'),
+                green if status['superwasp_sufficient_data'] else red, bold, clearformat))
+            print(u'     Outside Hum.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} %RH'.format(
+                status['superwasp_ext_humidity'][0], status['superwasp_ext_humidity'][1],
+                green if status['superwasp_ext_humidity'][2] else red, bold, clearformat))
+            print(u'     (-)Sky Temp.: {2}{3}{0}{4}{2} \u2014 {2}{3}{1}{4} \u2103'.format(
+                -status['superwasp_sky_temp'][0], -status['superwasp_sky_temp'][1],
+                green if status['superwasp_sky_temp'][2] else red, bold, clearformat))
+            print(u'  Temp. > Dew Pt.: {2}{3}{0:.2f}{4}{2} \u2014 {2}{3}{1:.2f}{4} \u2103'.format(
+                status['superwasp_dew_point_delta'][0], status['superwasp_dew_point_delta'][1],
+                green if status['superwasp_dew_point_delta'][2] else red, bold, clearformat))
+        else:
+            print(u'{0}{1} No SuperWASP data available{2}'.format(red, bold, clearformat))
 
         print()
     return status is None or not status['can_observe']
