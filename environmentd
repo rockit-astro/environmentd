@@ -20,31 +20,41 @@
    be queried to determine whether it is safe to observe."""
 
 # pylint: disable=too-many-locals
+# pylint: disable=broad-except
 
 from collections import deque
 import datetime
 import math
-import socket
 import threading
 import time
-import urllib.request
-import demjson
 import Pyro4
 
-# Settings for this daemon
-PYRO_HOST = 'localhost'
-PYRO_PORT = 9002
 PYRO_COMM_TIMEOUT = 5
-VAISALA_DAEMON_URI = 'PYRO:vaisala_daemon@localhost:9001'
 
-ROOMALERT_IP = '192.168.0.47'
-ROOMALERT_PORT = 80
-ROOMALERT_QUERY_TIMEOUT = 5
+# Settings for this daemon
+PYRO_HOST = '192.168.0.102'
+PYRO_PORT = 9002
+PYRO_NAME = 'environment_daemon'
 
-SUPERWASP_WEATHER_URI = 'http://wasp.warwick.ac.uk/swasp/main/monitor/public/weather.log'
-SUPERWASP_QUERY_TIMEOUT = 5
+# Settings for low-level daemons
+VAISALA_HOST = '192.168.0.102'
+VAISALA_PORT = 9001
+VAISALA_NAME = 'vaisala_daemon'
+
+ROOMALERT_HOST = '192.168.0.102'
+ROOMALERT_PORT = 9008
+ROOMALERT_NAME = 'roomalert_daemon'
+
+SUPERWASP_HOST = '192.168.0.102'
+SUPERWASP_PORT = 9007
+SUPERWASP_NAME = 'superwasp_daemon'
 
 # TODO: Include UPS status
+# TODO: Include disk space
+
+VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
+ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
+SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -69,42 +79,13 @@ SUPERWASP_DEW_POINT_DELTA_LIMITS = (2, 100)
 # Maximum gap that we will accept between measurements (due to query failures,
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
-VAISALA_TIME_GAP_MAX = datetime.timedelta(seconds=30)
-ROOMALERT_TIME_GAP_MAX = datetime.timedelta(seconds=30)
-SUPERWASP_TIME_GAP_MAX = datetime.timedelta(seconds=30)
+TIME_GAP_MAX = datetime.timedelta(seconds=30)
 
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
-
-def query_roomalert_json(hostname, port, timeout):
-    """Query json data from the roomalert"""
-    # The Room Alert omits the HTTP header when returning JSON.
-    # This violates the HTTP spec and prevents us from using the
-    # standard query libraries.  We instead speak HTTP ourselves over a socket.
-    try:
-        sock = socket.create_connection((hostname, port), timeout)
-        sock.sendall('GET /getData.htm HTTP/1.0\n\n'.encode('ascii'))
-
-        data = [sock.recv(4096)]
-        while data[-1]:
-            data.append(sock.recv(4096))
-
-    except Exception as exception:
-        raise Exception('Socket error while querying {}: {}'.format(hostname, str(exception)))
-
-    # The first line will either be the JSON we want, or a raw HTTP header
-    response = ''.join(b.decode('ascii') for b in data)
-
-    if response[0] != '{':
-        raise Exception('Unexpected response from {}: {}'.format(hostname, response))
-
-    # The JSON returned by earlier firmwares omits quotes around the keys
-    # This violates the JSON specification, and is not accepted by the
-    # built-in JSON parser.  demjson accepts this invalid input.
-    return demjson.decode(response)
 
 class AggregateMeasurement:
     """A collection of measurements of a specific type over time."""
@@ -148,19 +129,16 @@ class VaisalaWatcher:
         """Run loop for monitoring the vaisalad daemon"""
         while True:
             now = datetime.datetime.utcnow
-
-            # Query the latest measurement
-            # pylint: disable=broad-except
             try:
                 # The delay between queries is greater than the comm timeout
                 # so there is no point caching the proxy between loops
-                vaisala = Pyro4.Proxy(VAISALA_DAEMON_URI)
+                vaisala = Pyro4.Proxy(VAISALA_URI)
                 data = vaisala.last_measurement()
 
                 if data is not None:
                     # Pryo doesn't deserialize dates, so we manually manage this.
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if now() - data['date'] > VAISALA_TIME_GAP_MAX:
+                    if now() - data['date'] > TIME_GAP_MAX:
                         print('{} WARNING: recieved stale data from vaisalad: {}' \
                         .format(now(), data['date']))
 
@@ -171,7 +149,6 @@ class VaisalaWatcher:
             except Exception as exception:
                 print('{} ERROR: failed to query from vaisalad: {}' \
                       .format(now(), str(exception)))
-            # pylint: enable=broad-except
 
             time.sleep(VAISALA_QUERY_DELAY)
 
@@ -206,7 +183,7 @@ class VaisalaWatcher:
                 if measurement_start is None:
                     measurement_start = date
 
-                if date - measurement_end > VAISALA_TIME_GAP_MAX:
+                if date - measurement_end > TIME_GAP_MAX:
                     sufficient_data = False
 
                 wind.add(measurement['wind_speed'])
@@ -268,37 +245,26 @@ class RoomAlertWatcher:
         """Run loop for monitoring the room alert"""
         while True:
             now = datetime.datetime.utcnow
-
-            # Query the latest measurement
-            # pylint: disable=broad-except
             try:
-                data = query_roomalert_json(ROOMALERT_IP, ROOMALERT_PORT,
-                                            ROOMALERT_QUERY_TIMEOUT)
+                # The delay between queries is greater than the comm timeout
+                # so there is no point caching the proxy between loops
+                roomalert = Pyro4.Proxy(ROOMALERT_URI)
+                data = roomalert.last_measurement()
 
-                date = datetime.datetime.strptime(data['date'], "%m/%d/%y %H:%M:%S")
-                processed = {
-                    'date': date,
-                    'external_temp': float(data['sensor'][0]['tc']),
-                    'external_humidity': float(data['sensor'][0]['h']),
-                    'internal_temp': float(data['sensor'][1]['tc']),
-                    'internal_humidity': float(data['sensor'][1]['h']),
-
-                    'roomalert_temp': float(data['internal_sen'][0]['tc']),
-                    'roomalert_humidity': float(data['internal_sen'][0]['h']),
-                    'truss_temp': float(data['sensor'][2]['tc']),
-                    'hatch_closed': bool(data['s_sen'][0]['stat']),
-                    'trap_closed': bool(data['s_sen'][1]['stat']),
-                }
-
-                if now() - date > ROOMALERT_TIME_GAP_MAX:
-                    print('{} WARNING: recieved stale data from RoomAlert: {}' \
+                if data is not None:
+                    # Pryo doesn't deserialize dates, so we manually manage this.
+                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
+                    if now() - data['date'] > TIME_GAP_MAX:
+                        print('{} WARNING: recieved stale data from roomalertd: {}' \
                         .format(now(), data['date']))
 
-                self._data.append(processed)
+                    self._data.append(data)
+                else:
+                    print('{} WARNING: recieved empty data from roomalertd' \
+                        .format(now()))
             except Exception as exception:
-                print('{} ERROR: failed to query from RoomAlert: {}' \
+                print('{} ERROR: failed to query from roomalertd: {}' \
                       .format(now(), str(exception)))
-            # pylint: enable=broad-except
 
             time.sleep(ROOMALERT_QUERY_DELAY)
 
@@ -341,7 +307,7 @@ class RoomAlertWatcher:
                 if measurement_start is None:
                     measurement_start = date
 
-                if date - measurement_end > ROOMALERT_TIME_GAP_MAX:
+                if date - measurement_end > TIME_GAP_MAX:
                     sufficient_data = False
 
                 external_temp.add(measurement['external_temp'])
@@ -413,36 +379,28 @@ class SuperWASPWatcher:
 
     def __run_thread(self):
         """Run loop for monitoring the SuperWASP weather log"""
-        socket.setdefaulttimeout(SUPERWASP_QUERY_TIMEOUT)
         while True:
             now = datetime.datetime.utcnow
-
-            # Query the latest measurement
-            # pylint: disable=broad-except
             try:
-                with urllib.request.urlopen(SUPERWASP_WEATHER_URI) as response:
-                    data = response.readlines()[-1].decode('ascii').split()
+                # The delay between queries is greater than the comm timeout
+                # so there is no point caching the proxy between loops
+                superwasp = Pyro4.Proxy(SUPERWASP_URI)
+                data = superwasp.last_measurement()
 
-                # TODO: Convert swasp mjd to date
-                date = now()
-
-                processed = {
-                    'date': date,
-                    'superwasp_sky_temp': float(data[8]),
-                    'superwasp_ext_humidity': float(data[14]),
-                    'superwasp_dew_point_delta': float(data[11]) - float(data[17]),
-                }
-
-                if now() - date > SUPERWASP_TIME_GAP_MAX:
-                    print('{} WARNING: recieved stale data from SuperWASP: {}' \
+                if data is not None:
+                    # Pryo doesn't deserialize dates, so we manually manage this.
+                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
+                    if now() - data['date'] > TIME_GAP_MAX:
+                        print('{} WARNING: recieved stale data from superwaspd: {}' \
                         .format(now(), data['date']))
 
-                self._data.append(processed)
+                    self._data.append(data)
+                else:
+                    print('{} WARNING: recieved empty data from superwaspd' \
+                        .format(now()))
             except Exception as exception:
-                print('{} ERROR: failed to query from SuperWASP: {}' \
+                print('{} ERROR: failed to query from superwaspd: {}' \
                       .format(now(), str(exception)))
-            # pylint: enable=broad-except
-
             time.sleep(SUPERWASP_QUERY_DELAY)
 
     def status(self, max_first_date, min_last_date):
@@ -476,7 +434,7 @@ class SuperWASPWatcher:
                 if measurement_start is None:
                     measurement_start = date
 
-                if date - measurement_end > ROOMALERT_TIME_GAP_MAX:
+                if date - measurement_end > TIME_GAP_MAX:
                     sufficient_data = False
 
                 superwasp_sky_temp.add(measurement['superwasp_sky_temp'])
@@ -524,8 +482,6 @@ class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
 
     def __init__(self):
-        self._lock = threading.Lock()
-        self._running = True
         self._vaisala = VaisalaWatcher()
         self._roomalert = RoomAlertWatcher()
         self._superwasp = SuperWASPWatcher()
@@ -538,7 +494,7 @@ class EnvironmentDaemon:
         max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
 
         # The oldest date that the last measurement can take while remaining valid
-        min_last_date = datetime.datetime.utcnow() - VAISALA_TIME_GAP_MAX
+        min_last_date = datetime.datetime.utcnow() - TIME_GAP_MAX
 
         vaisala_observe, vaisala_data = self._vaisala.status(max_first_date, min_last_date)
         roomalert_observe, roomalert_data = self._roomalert.status(max_first_date, min_last_date)
@@ -549,14 +505,6 @@ class EnvironmentDaemon:
         ret.update(roomalert_data)
         ret.update(superwasp_data)
         return ret
-
-    def running(self):
-        """Returns false if the daemon should be terminated"""
-        return self._running
-
-    def stop(self):
-        """Stop the daemon thread"""
-        self._running = False
 
     def clear_history(self):
         """Clear the cached measurements"""
@@ -573,11 +521,11 @@ def spawn_daemon():
     pyro = Pyro4.Daemon(host=PYRO_HOST, port=PYRO_PORT)
 
     environment = EnvironmentDaemon()
-    uri = pyro.register(environment, objectId='environment_daemon')
+    uri = pyro.register(environment, objectId=PYRO_NAME)
 
     print('{} MESSAGE: Starting environment daemon with Pyro ID: {}' \
         .format(datetime.datetime.utcnow(), uri))
-    pyro.requestLoop(loopCondition=environment.running)
+    pyro.requestLoop()
     print('{} MESSAGE: Stopping environment daemon with Pyro ID: {}' \
         .format(datetime.datetime.utcnow(), uri))
 
