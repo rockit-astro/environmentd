@@ -86,7 +86,7 @@ def print_status():
                               status['roomalert_sufficient_data'])
             print(u'RoomAlert data from ' + format_range(roomalert_data) + ':')
             print(u'    Outside Temp.: ' + format_range(status['external_temp']) + ' \u2103')
-            print(u'     Outside Hum.: ' + format_range(status['external_humidity']))
+            print(u'     Outside Hum.: ' + format_range(status['external_humidity']) + ' %RH')
             print(u'   Internal Temp.: ' + format_range(status['internal_temp']) + ' \u2103')
             print(u'    Internal Hum.: ' + format_range(status['internal_humidity']) + ' %RH')
             print(u'      Truss Temp.: ' + format_range(status['truss_temp'], color=False)\
