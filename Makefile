@@ -1,6 +1,13 @@
-rpm:
-	python3 setup.py bdist_rpm
+RPMBUILD = rpmbuild --define "_topdir %(pwd)/build" \
+        --define "_builddir %{_topdir}" \
+        --define "_rpmdir %{_topdir}" \
+        --define "_srcrpmdir %{_topdir}" \
+        --define "_sourcedir %(pwd)"
 
-clean:
-	python3 setup.py clean
-	rm -rf build dist
+all:
+	mkdir -p build
+	${RPMBUILD} -ba environment-server.spec
+	${RPMBUILD} -ba environment-client.spec
+	mv build/noarch/*.rpm .
+	rm -rf build
+
