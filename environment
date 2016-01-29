@@ -17,20 +17,36 @@
 
 """Commandline client for communicating with environmentd"""
 
+# pylint: disable=too-many-statements
+
 import datetime
+import json
 import os
 import sys
 import Pyro4
 
-DAEMON_URI = 'PYRO:environment_daemon@localhost:9002'
+PYRO_HOST = '192.168.0.102'
+PYRO_PORT = 9002
+PYRO_NAME = 'environment_daemon'
+
+PYRO_URI = 'PYRO:' + PYRO_NAME + '@' + PYRO_HOST + ':' + str(PYRO_PORT)
+SCRIPT_NAME = os.path.basename(sys.argv[0])
+
 FMT_GREEN = u'\033[92m'
 FMT_RED = u'\033[91m'
 FMT_BOLD = u'\033[1m'
 FMT_CLEAR = u'\033[0m'
 
 def print_status():
-    """Prints the latest status data in human-readable form"""
-    status = Pyro4.Proxy(DAEMON_URI).status()
+    """Prints the latest environment data in human-readable form"""
+    status = None
+
+    try:
+        with Pyro4.Proxy(PYRO_URI) as environment:
+            status = environment.status()
+    except Pyro4.errors.CommunicationError:
+        print('error: unable to communicate with the environment daemon')
+        return 1
 
     if status is None:
         print('No data available')
@@ -104,6 +120,20 @@ def print_status():
         print()
     return status is None or not status['can_observe']
 
+def print_json():
+    """Prints the latest environment data in machine-readable form"""
+    status = None
+    try:
+        with Pyro4.Proxy(PYRO_URI) as environment:
+            status = environment.status()
+    except Pyro4.errors.CommunicationError:
+        print('error: unable to communicate with the environment daemon')
+        return 1
+
+    print(json.dumps(status))
+
+    return 0
+
 def format_range(data, fmt=None, color=True):
     """Builds a formatted string with a value range"""
     fmt = '' if fmt is None else ':' + fmt
@@ -122,31 +152,26 @@ def format_open_closed(data):
         string += "CLOSED"
     return FMT_BOLD + string + FMT_CLEAR
 
-def print_raw():
-    """Prints the latest status data in machine-readable form"""
-    status = Pyro4.Proxy(DAEMON_URI).status()
-    return status is None or not status['can_observe']
 
 def print_usage(name):
     """Prints the utility help"""
-    print('Usage: {} command'.format(name))
+    print('Usage: {} <command>'.format(name))
     print()
-    print('    {} status'.format(name))
-    print()
-    print('  Print a human-readable summary of the operations status and exit')
-    print()
-    print('    {} raw'.format(name))
-    print()
-    print('  Print a machine-readable summary of the operations status and exit')
+    print('   status      print a human-readable summary of the aggregated environment status')
+    print('   json        print a machine-readable summary of the aggregated environment status')
     print()
 
     return 1
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'status':
-            sys.exit(print_status())
-        elif sys.argv[1] == 'raw':
-            sys.exit(print_raw())
-    else:
-        sys.exit(print_usage(os.path.basename(sys.argv[0])))
+    if len(sys.argv) == 1:
+        sys.exit(print_usage(SCRIPT_NAME))
+
+    if sys.argv[1] == 'status':
+        sys.exit(print_status())
+    elif sys.argv[1] == 'json':
+        sys.exit(print_json())
+
+    # Command not found
+    sys.exit(print_usage(SCRIPT_NAME))
+

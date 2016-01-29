@@ -351,8 +351,8 @@ class RoomAlertWatcher:
                 'roomalert_temp': roomalert_temp.results(),
                 'roomalert_humidity': roomalert_humidity.results(),
                 'truss_temp': truss_temp.results(),
-                'hatch_closed': hatch_closed,
-                'trap_closed': trap_closed,
+                'hatch_closed': list(hatch_closed), # set to list so it can be json serialized
+                'trap_closed': list(trap_closed),
                 'roomalert_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 'roomalert_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
 
