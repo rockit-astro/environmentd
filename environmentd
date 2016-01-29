@@ -29,12 +29,11 @@ import threading
 import time
 import Pyro4
 
-PYRO_COMM_TIMEOUT = 5
-
 # Settings for this daemon
 PYRO_HOST = '192.168.0.102'
 PYRO_PORT = 9002
 PYRO_NAME = 'environment_daemon'
+PYRO_COMM_TIMEOUT = 5
 
 # Settings for low-level daemons
 VAISALA_HOST = '192.168.0.102'
