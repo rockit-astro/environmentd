@@ -1,5 +1,5 @@
 Name:      onemetre-environment-client
-Version:   1.1
+Version:   1.2
 Release:   1
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment client for the Warwick one-metre telescope.
@@ -15,7 +15,9 @@ environment is a commandline utility that queries the environment daemon.
 
 %build
 mkdir -p %{buildroot}%{_bindir}
+mkdir -p %{buildroot}/etc/bash_completion.d
 %{__install} %{_sourcedir}/environment %{buildroot}%{_bindir}
+%{__install} %{_sourcedir}/completion/environment %{buildroot}/etc/bash_completion.d/environment
 
 # Install python dependencies
 # This is horrible, but it seems to be the only way that actually works!
@@ -24,5 +26,6 @@ pip3 install Pyro4
 %files
 %defattr(0755,root,root,-)
 %{_bindir}/environment
+/etc/bash_completion.d/environment
 
 %changelog
