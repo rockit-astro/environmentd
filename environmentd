@@ -21,6 +21,7 @@
 
 # pylint: disable=too-many-locals
 # pylint: disable=broad-except
+# pylint: disable=too-few-public-methods
 
 from collections import deque
 import datetime
@@ -60,21 +61,6 @@ SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPE
 # to the initial startup, while we wait to build sufficient history.
 CONDITION_TIMEOUT_DELAY = datetime.timedelta(minutes=20)
 
-# Safe operating ranges. Dome will be closed if these parameters aren't met
-VAISALA_WIND_LIMITS = (0, 30)
-VAISALA_TEMPERATURE_LIMITS = (0, 50)
-VAISALA_HUMIDITY_LIMITS = (0, 75)
-VAISALA_PRESSURE_LIMITS = (600, 1100)
-
-ROOMALERT_EXT_TEMPERATURE_LIMITS = (0, 50)
-ROOMALERT_EXT_HUMIDITY_LIMITS = (0, 75)
-ROOMALERT_INT_TEMPERATURE_LIMITS = (0, 50)
-ROOMALERT_INT_HUMIDITY_LIMITS = (0, 75)
-
-SUPERWASP_SKY_TEMPERATURE_LIMITS = (-100, -30)
-SUPERWASP_EXT_HUMIDITY_LIMITS = (0, 75)
-SUPERWASP_DEW_POINT_DELTA_LIMITS = (2, 100)
-
 # Maximum gap that we will accept between measurements (due to query failures,
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
@@ -86,38 +72,98 @@ VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
 
-class AggregateMeasurement:
-    """A collection of measurements of a specific type over time."""
-    def __init__(self, limits=(-99999999, 99999999)):
-        self._min = 99999999
-        self._max = -99999999
-        self._count = 0
-        self._limit_min = limits[0]
-        self._limit_max = limits[1]
+class AggregateBehaviour:
+    """Aggregation behaviour"""
+    RangeWithLimits, Range, Set, Latest = range(4)
 
-    def add(self, measurement):
-        """Add a measurement to the aggregate"""
-        self._min = min(measurement, self._min)
-        self._max = max(measurement, self._max)
-        self._count = self._count + 1
+class AggregateParameter:
+    """Defines the aggregation behaviour for a specific environment parameter"""
+    def __init__(self, name, behaviour, limits=None):
+        self.name = name
+        self._behaviour = behaviour
+        self._limits = limits
 
-    def results(self):
-        """Returns a tuple of max value, min value, min date, max date, and
-           whether all the measurements fall within the specified limits."""
-        if self._count == 0:
-            return (0, 0, False)
+    def aggregate(self, data, max_first_date):
+        """Aggregate measurement data"""
+        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
+                self._behaviour == AggregateBehaviour.Range:
 
-        valid = self._min > self._limit_min and self._max < self._limit_max
-        return (self._min, self._max, valid)
+            values = []
+            for measurement in data:
+                if measurement['date'] > max_first_date:
+                    values.append(measurement[self.name])
 
-class VaisalaWatcher:
-    """Tracks the state of the remote Vaisala daemon"""
+            if len(values) == 0:
+                return (0, 0, False)
 
-    def __init__(self):
+            low = values[0]
+            high = values[0]
+            for value in values:
+                low = min(value, low)
+                high = max(value, high)
+
+            valid = self._behaviour == AggregateBehaviour.Range or \
+                (low > self._limits[0] and high < self._limits[1])
+
+            return (low, high, valid)
+        elif self._behaviour == AggregateBehaviour.Set:
+            ret = set()
+            for measurement in data:
+                if measurement['date'] > max_first_date:
+                    ret.add(measurement[self.name])
+
+            # set can't be serialized to JSON, so convert to list now
+            return list(ret)
+        else:
+            latest_value = 0
+            latest_date = max_first_date
+            for measurement in data:
+                date = measurement['date']
+                if date > latest_date:
+                    latest_date = date
+                    latest_value = measurement[self.name]
+        return (latest_value, latest_date > max_first_date)
+
+# Safe operating ranges. Dome will be closed if these parameters aren't met
+
+VAISALA_PARAMETERS = [
+    AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 30)),
+    AggregateParameter('temperature', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
+    AggregateParameter('relative_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+    AggregateParameter('pressure', AggregateBehaviour.RangeWithLimits, limits=(600, 1100)),
+]
+
+ROOMALERT_PARAMETERS = [
+    AggregateParameter('external_temp', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
+    AggregateParameter('external_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+    AggregateParameter('internal_temp', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
+    AggregateParameter('internal_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+
+    AggregateParameter('roomalert_temp', AggregateBehaviour.Range),
+    AggregateParameter('roomalert_humidity', AggregateBehaviour.Range),
+    AggregateParameter('truss_temp', AggregateBehaviour.Range),
+    AggregateParameter('hatch_closed', AggregateBehaviour.Set),
+    AggregateParameter('trap_closed', AggregateBehaviour.Set),
+]
+
+SUPERWASP_PARAMETERS = [
+    AggregateParameter('sky_temp', AggregateBehaviour.RangeWithLimits, limits=(-100, -30)),
+    AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+    AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+]
+
+class PyroWatcher:
+    """Watches the state of a Pyro daemon implementing the last_measurement convention"""
+    def __init__(self, daemon_name, pyro_uri, query_delay, parameters):
+        self._daemon_name = daemon_name
+        self._pyro_uri = pyro_uri
+        self._query_delay = query_delay
+        self._parameters = parameters
+
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
         queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
-            1.1 / VAISALA_QUERY_DELAY
+            1.1 / query_delay
         self._data = deque(maxlen=math.ceil(queue_len))
 
         runloop = threading.Thread(target=self.__run_thread)
@@ -125,39 +171,35 @@ class VaisalaWatcher:
         runloop.start()
 
     def __run_thread(self):
-        """Run loop for monitoring the vaisalad daemon"""
+        """Run loop for monitoring the hardware daemon"""
         while True:
             now = datetime.datetime.utcnow
             try:
                 # The delay between queries is greater than the comm timeout
                 # so there is no point caching the proxy between loops
-                vaisala = Pyro4.Proxy(VAISALA_URI)
-                data = vaisala.last_measurement()
+                daemon = Pyro4.Proxy(self._pyro_uri)
+                data = daemon.last_measurement()
 
                 if data is not None:
                     # Pryo doesn't deserialize dates, so we manually manage this.
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
                     if now() - data['date'] > TIME_GAP_MAX:
-                        print('{} WARNING: recieved stale data from vaisalad: {}' \
-                        .format(now(), data['date']))
+                        print('{} WARNING: recieved stale data from {}: {}' \
+                        .format(now(), self._daemon_name, data['date']))
 
                     self._data.append(data)
                 else:
-                    print('{} WARNING: recieved empty data from vaisalad' \
-                        .format(now()))
+                    print('{} WARNING: recieved empty data from {}' \
+                        .format(now(), self._daemon_name))
             except Exception as exception:
-                print('{} ERROR: failed to query from vaisalad: {}' \
-                      .format(now(), str(exception)))
+                print('{} ERROR: failed to query from {}: {}' \
+                      .format(now(), self._daemon_name, str(exception)))
 
-            time.sleep(VAISALA_QUERY_DELAY)
+            time.sleep(self._query_delay)
 
     def status(self, max_first_date, min_last_date):
         """Queries the aggregate status of the vaisala weather station.
            Returns a tuple of observability and data"""
-        wind = AggregateMeasurement(VAISALA_WIND_LIMITS)
-        vaisala_temp = AggregateMeasurement(VAISALA_TEMPERATURE_LIMITS)
-        vaisala_humidity = AggregateMeasurement(VAISALA_HUMIDITY_LIMITS)
-        pressure = AggregateMeasurement(VAISALA_PRESSURE_LIMITS)
 
         measurement_start = None
         measurement_end = None
@@ -165,7 +207,7 @@ class VaisalaWatcher:
         queue_len = 0
         sufficient_data = True
 
-        # deque is threadsafe, so we don't need an explicit lock
+        # check if we have sufficient data
         for measurement in self._data:
             queue_len += 1
             date = measurement['date']
@@ -185,11 +227,6 @@ class VaisalaWatcher:
                 if date - measurement_end > TIME_GAP_MAX:
                     sufficient_data = False
 
-                wind.add(measurement['wind_speed'])
-                vaisala_temp.add(measurement['temperature'])
-                vaisala_humidity.add(measurement['relative_humidity'])
-                pressure.add(measurement['pressure'])
-
             measurement_end = date
 
         # Check that the first measurement was sufficiently old
@@ -200,275 +237,28 @@ class VaisalaWatcher:
         if measurement_end is None or measurement_end < min_last_date:
             sufficient_data = False
 
-        # Can observe only if we have sufficient data and all of the parameters
-        # are within their defined safe limits
-        can_observe = sufficient_data and wind.results()[2] and pressure.results()[2] \
-            and vaisala_temp.results()[2] and vaisala_humidity.results()[2]
-
         data = {
-            'vaisala_sufficient_data': sufficient_data,
-            'vaisala_queue_len': queue_len
+            self._daemon_name+'_sufficient_data': sufficient_data,
+            self._daemon_name+'_queue_len': queue_len
         }
-
-        if queue_len > 0:
-            data.update({
-                'wind': wind.results(),
-                'pressure': pressure.results(),
-                'vaisala_temp': vaisala_temp.results(),
-                'vaisala_humidity': vaisala_humidity.results(),
-                'vaisala_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'vaisala_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-
-                'vaisala_queue_start': queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
-            })
-
-        return (can_observe, data)
-
-    def clear_history(self):
-        """Clear the cached measurements"""
-        self._data.clear()
-
-class RoomAlertWatcher:
-    """Tracks the state of the Room Alert"""
-
-    def __init__(self):
-        queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
-            1.1 / ROOMALERT_QUERY_DELAY
-        self._data = deque(maxlen=math.ceil(queue_len))
-
-        runloop = threading.Thread(target=self.__run_thread)
-        runloop.daemon = True
-        runloop.start()
-
-    def __run_thread(self):
-        """Run loop for monitoring the room alert"""
-        while True:
-            now = datetime.datetime.utcnow
-            try:
-                # The delay between queries is greater than the comm timeout
-                # so there is no point caching the proxy between loops
-                roomalert = Pyro4.Proxy(ROOMALERT_URI)
-                data = roomalert.last_measurement()
-
-                if data is not None:
-                    # Pryo doesn't deserialize dates, so we manually manage this.
-                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if now() - data['date'] > TIME_GAP_MAX:
-                        print('{} WARNING: recieved stale data from roomalertd: {}' \
-                        .format(now(), data['date']))
-
-                    self._data.append(data)
-                else:
-                    print('{} WARNING: recieved empty data from roomalertd' \
-                        .format(now()))
-            except Exception as exception:
-                print('{} ERROR: failed to query from roomalertd: {}' \
-                      .format(now(), str(exception)))
-
-            time.sleep(ROOMALERT_QUERY_DELAY)
-
-    def status(self, max_first_date, min_last_date):
-        """Queries the aggregate status of the RoomAlert monitor.
-           Returns a tuple of observability and data"""
-
-        external_temp = AggregateMeasurement(ROOMALERT_EXT_TEMPERATURE_LIMITS)
-        external_humidity = AggregateMeasurement(ROOMALERT_EXT_HUMIDITY_LIMITS)
-        internal_temp = AggregateMeasurement(ROOMALERT_INT_TEMPERATURE_LIMITS)
-        internal_humidity = AggregateMeasurement(ROOMALERT_INT_HUMIDITY_LIMITS)
-
-        # These values are tracked, but not considered for observability
-        roomalert_temp = AggregateMeasurement()
-        roomalert_humidity = AggregateMeasurement()
-        truss_temp = AggregateMeasurement()
-        hatch_closed = set()
-        trap_closed = set()
-
-        measurement_start = None
-        measurement_end = None
-        queue_start = None
-        queue_len = 0
-        sufficient_data = True
-
-        # deque is threadsafe, so we don't need an explicit lock
-        for measurement in self._data:
-            queue_len += 1
-            date = measurement['date']
-
-            # This is the first measurement with a valid date
-            if queue_start is None:
-                queue_start = date
-
-            if measurement_end is None:
-                measurement_end = date
-
-            # Only include measurements within the desired window
-            if date > max_first_date:
-                if measurement_start is None:
-                    measurement_start = date
-
-                if date - measurement_end > TIME_GAP_MAX:
-                    sufficient_data = False
-
-                external_temp.add(measurement['external_temp'])
-                external_humidity.add(measurement['external_humidity'])
-                internal_temp.add(measurement['internal_temp'])
-                internal_humidity.add(measurement['internal_humidity'])
-
-                roomalert_temp.add(measurement['roomalert_temp'])
-                roomalert_humidity.add(measurement['roomalert_humidity'])
-                truss_temp.add(measurement['truss_temp'])
-                hatch_closed.add(measurement['hatch_closed'])
-                trap_closed.add(measurement['trap_closed'])
-
-            measurement_end = date
-
-        # Check that the first measurement was sufficiently old
-        if queue_start is None or queue_start > max_first_date:
-            sufficient_data = False
-
-        # Check the time between the last measurement and now
-        if measurement_end is None or measurement_end < min_last_date:
-            sufficient_data = False
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        can_observe = sufficient_data and external_temp.results()[2] and \
-            external_humidity.results()[2] and internal_temp.results()[2] and \
-            internal_humidity.results()[2]
-
-        data = {
-            'roomalert_sufficient_data': sufficient_data,
-            'roomalert_queue_len': queue_len
-        }
-
+        can_observe = sufficient_data
         if queue_len > 0:
+            for param in self._parameters:
+                key = self._daemon_name+'_'+param.name
+                value = param.aggregate(self._data, max_first_date)
+                data.update({key: value})
+                can_observe = can_observe and value[2]
+
             data.update({
-                'external_temp': external_temp.results(),
-                'external_humidity': external_humidity.results(),
-                'internal_temp': internal_temp.results(),
-                'internal_humidity': internal_humidity.results(),
-                'roomalert_temp': roomalert_temp.results(),
-                'roomalert_humidity': roomalert_humidity.results(),
-                'truss_temp': truss_temp.results(),
-                'hatch_closed': list(hatch_closed), # set to list so it can be json serialized
-                'trap_closed': list(trap_closed),
-                'roomalert_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'roomalert_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-
-                'roomalert_queue_start': queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
-            })
-
-        return (can_observe, data)
-
-    def clear_history(self):
-        """Clear the cached measurements"""
-        self._data.clear()
-
-class SuperWASPWatcher:
-    """Tracks the state of the SuperWASP weather log"""
-
-    def __init__(self):
-        queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
-            1.1 / SUPERWASP_QUERY_DELAY
-        self._data = deque(maxlen=math.ceil(queue_len))
-
-        runloop = threading.Thread(target=self.__run_thread)
-        runloop.daemon = True
-        runloop.start()
-
-    def __run_thread(self):
-        """Run loop for monitoring the SuperWASP weather log"""
-        while True:
-            now = datetime.datetime.utcnow
-            try:
-                # The delay between queries is greater than the comm timeout
-                # so there is no point caching the proxy between loops
-                superwasp = Pyro4.Proxy(SUPERWASP_URI)
-                data = superwasp.last_measurement()
-
-                if data is not None:
-                    # Pryo doesn't deserialize dates, so we manually manage this.
-                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if now() - data['date'] > TIME_GAP_MAX:
-                        print('{} WARNING: recieved stale data from superwaspd: {}' \
-                        .format(now(), data['date']))
-
-                    self._data.append(data)
-                else:
-                    print('{} WARNING: recieved empty data from superwaspd' \
-                        .format(now()))
-            except Exception as exception:
-                print('{} ERROR: failed to query from superwaspd: {}' \
-                      .format(now(), str(exception)))
-            time.sleep(SUPERWASP_QUERY_DELAY)
-
-    def status(self, max_first_date, min_last_date):
-        """Queries the aggregate status of the RoomAlert monitor.
-           Returns a tuple of observability and data"""
-
-        superwasp_sky_temp = AggregateMeasurement(SUPERWASP_SKY_TEMPERATURE_LIMITS)
-        superwasp_ext_humidity = AggregateMeasurement(SUPERWASP_EXT_HUMIDITY_LIMITS)
-        superwasp_dew_point_delta = AggregateMeasurement(SUPERWASP_DEW_POINT_DELTA_LIMITS)
-
-        measurement_start = None
-        measurement_end = None
-        queue_start = None
-        queue_len = 0
-        sufficient_data = True
-
-        # deque is threadsafe, so we don't need an explicit lock
-        for measurement in self._data:
-            queue_len += 1
-            date = measurement['date']
-
-            # This is the first measurement with a valid date
-            if queue_start is None:
-                queue_start = date
-
-            if measurement_end is None:
-                measurement_end = date
-
-            # Only include measurements within the desired window
-            if date > max_first_date:
-                if measurement_start is None:
-                    measurement_start = date
-
-                if date - measurement_end > TIME_GAP_MAX:
-                    sufficient_data = False
-
-                superwasp_sky_temp.add(measurement['superwasp_sky_temp'])
-                superwasp_ext_humidity.add(measurement['superwasp_ext_humidity'])
-                superwasp_dew_point_delta.add(measurement['superwasp_dew_point_delta'])
-
-            measurement_end = date
-
-        # Check that the first measurement was sufficiently old
-        if queue_start is None or queue_start > max_first_date:
-            sufficient_data = False
-
-        # Check the time between the last measurement and now
-        if measurement_end is None or measurement_end < min_last_date:
-            sufficient_data = False
-
-        # Can observe only if we have sufficient data and all of the parameters
-        # are within their defined safe limits
-        can_observe = sufficient_data and superwasp_sky_temp.results()[2] and \
-            superwasp_ext_humidity.results()[2] and superwasp_dew_point_delta.results()[2]
-
-        data = {
-            'superwasp_sufficient_data': sufficient_data,
-            'superwasp_queue_len': queue_len
-        }
-
-        if queue_len > 0:
-            data.update({
-                'superwasp_sky_temp': superwasp_sky_temp.results(),
-                'superwasp_ext_humidity': superwasp_ext_humidity.results(),
-                'superwasp_dew_point_delta': superwasp_dew_point_delta.results(),
-                'superwasp_measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'superwasp_measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-
-                'superwasp_queue_start': queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
+                self._daemon_name+'_measurement_start':
+                    measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                self._daemon_name+'_measurement_end':
+                    measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                self._daemon_name+'_queue_start':
+                    queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             })
 
         return (can_observe, data)
@@ -481,9 +271,11 @@ class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
 
     def __init__(self):
-        self._vaisala = VaisalaWatcher()
-        self._roomalert = RoomAlertWatcher()
-        self._superwasp = SuperWASPWatcher()
+        self._watchers = [
+            PyroWatcher('vaisala', VAISALA_URI, VAISALA_QUERY_DELAY, VAISALA_PARAMETERS),
+            PyroWatcher('roomalert', ROOMALERT_URI, ROOMALERT_QUERY_DELAY, ROOMALERT_PARAMETERS),
+            PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, SUPERWASP_PARAMETERS)
+        ]
 
     def status(self):
         """Returns the aggregated status of the monitored daemons.
@@ -495,23 +287,22 @@ class EnvironmentDaemon:
         # The oldest date that the last measurement can take while remaining valid
         min_last_date = datetime.datetime.utcnow() - TIME_GAP_MAX
 
-        vaisala_observe, vaisala_data = self._vaisala.status(max_first_date, min_last_date)
-        roomalert_observe, roomalert_data = self._roomalert.status(max_first_date, min_last_date)
-        superwasp_observe, superwasp_data = self._superwasp.status(max_first_date, min_last_date)
+        can_observe = True
+        ret = {}
+        for watcher in self._watchers:
+            obs, data = watcher.status(max_first_date, min_last_date)
+            can_observe = can_observe and obs
+            ret.update(data)
 
-        ret = {'can_observe': vaisala_observe and roomalert_observe and superwasp_observe}
-        ret.update(vaisala_data)
-        ret.update(roomalert_data)
-        ret.update(superwasp_data)
+        ret.update({'can_observe': can_observe})
         return ret
 
     def clear_history(self):
         """Clear the cached measurements"""
         print('{} MESSAGE: clearing cached history' \
             .format(datetime.datetime.utcnow()))
-        self._vaisala.clear_history()
-        self._roomalert.clear_history()
-        self._superwasp.clear_history()
+        for watcher in self._watchers:
+            watcher.clear_history()
 
 def spawn_daemon():
     """Spawns the daemon and registers it with Pyro"""

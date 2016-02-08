@@ -67,10 +67,10 @@ def print_status():
                             vaisala_end.strftime('%H:%M:%S'),
                             status['vaisala_sufficient_data'])
             print(u'Vaisala data from ' + format_range(vaisala_data) + ':')
-            print(u'             Wind: ' + format_range(status['wind']) + ' km/h')
-            print(u'         Pressure: ' + format_range(status['pressure']) + ' hPa')
-            print(u'   N2 Plant Temp.: ' + format_range(status['vaisala_temp']) + ' \u2103')
-            print(u'    N2 Plant Hum.: ' + format_range(status['vaisala_humidity']) + ' %RH')
+            print(u'             Wind: ' + format_range(status['vaisala_wind_speed']) + ' km/h')
+            print(u'         Pressure: ' + format_range(status['vaisala_pressure']) + ' hPa')
+            print(u'   N2 Plant Temp.: ' + format_range(status['vaisala_temperature']) + ' \u2103')
+            print(u'    N2 Plant Hum.: ' + format_range(status['vaisala_relative_humidity']) + ' %RH')
             print()
         else:
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
@@ -85,18 +85,18 @@ def print_status():
                               roomalert_end.strftime('%H:%M:%S'),
                               status['roomalert_sufficient_data'])
             print(u'RoomAlert data from ' + format_range(roomalert_data) + ':')
-            print(u'    Outside Temp.: ' + format_range(status['external_temp']) + ' \u2103')
-            print(u'     Outside Hum.: ' + format_range(status['external_humidity']) + ' %RH')
-            print(u'   Internal Temp.: ' + format_range(status['internal_temp']) + ' \u2103')
-            print(u'    Internal Hum.: ' + format_range(status['internal_humidity']) + ' %RH')
-            print(u'      Truss Temp.: ' + format_range(status['truss_temp'], color=False)\
+            print(u'    Outside Temp.: ' + format_range(status['roomalert_external_temp']) + ' \u2103')
+            print(u'     Outside Hum.: ' + format_range(status['roomalert_external_humidity']) + ' %RH')
+            print(u'   Internal Temp.: ' + format_range(status['roomalert_internal_temp']) + ' \u2103')
+            print(u'    Internal Hum.: ' + format_range(status['roomalert_internal_humidity']) + ' %RH')
+            print(u'      Truss Temp.: ' + format_range(status['roomalert_truss_temp'], color=False)\
                 + ' \u2103')
-            print(u'     Server Temp.: ' + format_range(status['roomalert_temp'], color=False)\
+            print(u'     Server Temp.: ' + format_range(status['roomalert_roomalert_temp'], color=False)\
                 + ' \u2103')
-            print(u'      Server Hum.: ' + format_range(status['roomalert_humidity'], color=False)\
+            print(u'      Server Hum.: ' + format_range(status['roomalert_roomalert_humidity'], color=False)\
                 + ' %RH')
-            print(u'       Side Hatch: ' + format_open_closed(status['hatch_closed']))
-            print(u'        Trap Door: ' + format_open_closed(status['trap_closed']))
+            print(u'       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
+            print(u'        Trap Door: ' + format_open_closed(status['roomalert_trap_closed']))
         else:
             print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
         print()
