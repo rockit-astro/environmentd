@@ -83,46 +83,44 @@ class AggregateParameter:
         self._behaviour = behaviour
         self._limits = limits
 
-    def aggregate(self, data, max_first_date):
+    def aggregate(self, measurements):
         """Aggregate measurement data"""
         if self._behaviour == AggregateBehaviour.RangeWithLimits or \
                 self._behaviour == AggregateBehaviour.Range:
 
-            values = []
-            for measurement in data:
-                if measurement['date'] > max_first_date:
-                    values.append(measurement[self.name])
+            if len(measurements) == 0:
+                return (False, (0, 0, False))
 
-            if len(values) == 0:
-                return (0, 0, False)
-
-            low = values[0]
-            high = values[0]
-            for value in values:
+            low = measurements[0][self.name]
+            high = low
+            for measurement in measurements:
+                value = measurement[self.name]
                 low = min(value, low)
                 high = max(value, high)
 
-            valid = self._behaviour == AggregateBehaviour.Range or \
+            safe = self._behaviour == AggregateBehaviour.Range or \
                 (low > self._limits[0] and high < self._limits[1])
 
-            return (low, high, valid)
+            return (safe, (low, high, safe))
         elif self._behaviour == AggregateBehaviour.Set:
             ret = set()
-            for measurement in data:
-                if measurement['date'] > max_first_date:
-                    ret.add(measurement[self.name])
+            for measurement in measurements:
+                ret.add(measurement[self.name])
 
             # set can't be serialized to JSON, so convert to list now
-            return list(ret)
+            return (True, list(ret))
         else:
-            latest_value = 0
-            latest_date = max_first_date
-            for measurement in data:
-                date = measurement['date']
-                if date > latest_date:
-                    latest_date = date
-                    latest_value = measurement[self.name]
-        return (latest_value, latest_date > max_first_date)
+            if len(measurements) == 0:
+                return (False, 0)
+
+            date = measurements[0][self.name]
+            value = measurements[0]['date']
+            for measurement in measurements:
+                if measurement['date'] > date:
+                    date = measurement['date']
+                    value = measurement[self.name]
+
+        return (True, value)
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 
@@ -208,6 +206,7 @@ class PyroWatcher:
         sufficient_data = True
 
         # check if we have sufficient data
+        measurements_in_window = []
         for measurement in self._data:
             queue_len += 1
             date = measurement['date']
@@ -227,6 +226,8 @@ class PyroWatcher:
                 if date - measurement_end > TIME_GAP_MAX:
                     sufficient_data = False
 
+                measurements_in_window.append(measurement)
+
             measurement_end = date
 
         # Check that the first measurement was sufficiently old
@@ -244,13 +245,13 @@ class PyroWatcher:
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        can_observe = sufficient_data
+        safe = sufficient_data
         if queue_len > 0:
             for param in self._parameters:
-                key = self._daemon_name+'_'+param.name
-                value = param.aggregate(self._data, max_first_date)
-                data.update({key: value})
-                can_observe = can_observe and value[2]
+                param_key = self._daemon_name+'_'+param.name
+                param_safe, param_value = param.aggregate(measurements_in_window)
+                data.update({param_key: param_value})
+                safe = safe and param_safe
 
             data.update({
                 self._daemon_name+'_measurement_start':
@@ -261,7 +262,7 @@ class PyroWatcher:
                     queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             })
 
-        return (can_observe, data)
+        return (safe, data)
 
     def clear_history(self):
         """Clear the cached measurements"""
