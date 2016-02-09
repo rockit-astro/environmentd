@@ -50,12 +50,16 @@ SUPERWASP_HOST = '192.168.0.102'
 SUPERWASP_PORT = 9007
 SUPERWASP_NAME = 'superwasp_daemon'
 
+DISKSPACE_HOST = '192.168.0.101'
+DISKSPACE_PORT = 9008
+DISKSPACE_NAME = 'diskspace_daemon'
+
 # TODO: Include UPS status
-# TODO: Include disk space
 
 VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
 ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
 SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
+DISKSPACE_URI = 'PYRO:' + DISKSPACE_NAME + '@' + DISKSPACE_HOST + ':' + str(DISKSPACE_PORT)
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -66,12 +70,14 @@ CONDITION_TIMEOUT_DELAY = datetime.timedelta(minutes=20)
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
 TIME_GAP_MAX = datetime.timedelta(seconds=30)
+DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=5)
 
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
+DISKSPACE_QUERY_DELAY = 120
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
@@ -152,6 +158,13 @@ SUPERWASP_PARAMETERS = [
     AggregateParameter('sky_temp', AggregateBehaviour.RangeWithLimits, limits=(-100, -30)),
     AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
     AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+]
+
+DISKSPACE_PARAMETERS = [
+    AggregateParameter('data_fs_available_bytes', AggregateBehaviour.LatestWithLimits,
+                       limits=(5 * 2**30, 2**40)),
+    AggregateParameter('data_fs_percent_available', AggregateBehaviour.LatestWithLimits,
+                       limits=(5, 100)),
 ]
 
 class PyroWatcher:
@@ -290,6 +303,8 @@ class EnvironmentDaemon:
                         ROOMALERT_PARAMETERS),
             PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
                         SUPERWASP_PARAMETERS),
+            PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
+                        DISKSPACE_PARAMETERS)
         ]
 
     def status(self):
