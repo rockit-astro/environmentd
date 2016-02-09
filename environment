@@ -66,11 +66,12 @@ def print_status():
             vaisala_data = (vaisala_start.strftime('%H:%M:%S'),
                             vaisala_end.strftime('%H:%M:%S'),
                             status['vaisala_sufficient_data'])
-            print(u'Vaisala data from ' + format_range(vaisala_data) + ':')
-            print(u'             Wind: ' + format_range(status['vaisala_wind_speed']) + ' km/h')
-            print(u'         Pressure: ' + format_range(status['vaisala_pressure']) + ' hPa')
-            print(u'   N2 Plant Temp.: ' + format_range(status['vaisala_temperature']) + ' \u2103')
-            print(u'    N2 Plant Hum.: ' + format_range(status['vaisala_relative_humidity']) + ' %RH')
+            print('Vaisala data from ' + format_range(vaisala_data, ':'))
+            print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h'))
+            print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa'))
+            print('   N2 Plant Temp.: ' + format_range(status['vaisala_temperature'], '\u2103'))
+            print('    N2 Plant Hum.: ' + format_range(status['vaisala_relative_humidity'],
+                                                       ' %RH'))
             print()
         else:
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
@@ -84,19 +85,23 @@ def print_status():
             roomalert_data = (roomalert_start.strftime('%H:%M:%S'),
                               roomalert_end.strftime('%H:%M:%S'),
                               status['roomalert_sufficient_data'])
-            print(u'RoomAlert data from ' + format_range(roomalert_data) + ':')
-            print(u'    Outside Temp.: ' + format_range(status['roomalert_external_temp']) + ' \u2103')
-            print(u'     Outside Hum.: ' + format_range(status['roomalert_external_humidity']) + ' %RH')
-            print(u'   Internal Temp.: ' + format_range(status['roomalert_internal_temp']) + ' \u2103')
-            print(u'    Internal Hum.: ' + format_range(status['roomalert_internal_humidity']) + ' %RH')
-            print(u'      Truss Temp.: ' + format_range(status['roomalert_truss_temp'], color=False)\
-                + ' \u2103')
-            print(u'     Server Temp.: ' + format_range(status['roomalert_roomalert_temp'], color=False)\
-                + ' \u2103')
-            print(u'      Server Hum.: ' + format_range(status['roomalert_roomalert_humidity'], color=False)\
-                + ' %RH')
-            print(u'       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
-            print(u'        Trap Door: ' + format_open_closed(status['roomalert_trap_closed']))
+            print('RoomAlert data from ' + format_range(roomalert_data, ':'))
+            print('    Outside Temp.: ' + format_range(status['roomalert_external_temp'],
+                                                       '\u2103'))
+            print('     Outside Hum.: ' + format_range(status['roomalert_external_humidity'],
+                                                       ' %RH'))
+            print('   Internal Temp.: ' + format_range(status['roomalert_internal_temp'],
+                                                       '\u2103'))
+            print('    Internal Hum.: ' + format_range(status['roomalert_internal_humidity'],
+                                                       ' %RH'))
+            print('      Truss Temp.: ' + format_range(status['roomalert_truss_temp'],
+                                                       '\u2103', color=False))
+            print('     Server Temp.: ' + format_range(status['roomalert_roomalert_temp'],
+                                                       '\u2103', color=False))
+            print('      Server Hum.: ' + format_range(status['roomalert_roomalert_humidity'],
+                                                       ' %RH', color=False))
+            print('       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
+            print('        Trap Door: ' + format_open_closed(status['roomalert_trap_closed']))
         else:
             print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
         print()
@@ -110,12 +115,11 @@ def print_status():
             superwasp_data = (superwasp_start.strftime('%H:%M:%S'),
                               superwasp_end.strftime('%H:%M:%S'),
                               status['superwasp_sufficient_data'])
-            print(u'SuperWASP data from ' + format_range(superwasp_data) + ':')
-            print(u'     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'])\
-                + ' %RH')
-            print(u'        Sky Temp.: ' + format_range(status['superwasp_sky_temp']) + '\u2103')
-            print(u'  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'], '.2f')\
-                + '\u2103')
+            print('SuperWASP data from ' + format_range(superwasp_data) + ':')
+            print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
+            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u2103'))
+            print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
+                                                       '\u2103', fmt='.2f'))
         else:
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
@@ -135,12 +139,15 @@ def print_json():
 
     return 0
 
-def format_range(data, fmt=None, color=True):
+def format_range(data, suffix=None, fmt=None, color=True):
     """Builds a formatted string with a value range"""
     fmt = '' if fmt is None else ':' + fmt
     fmt = '{2}{3}{0' + fmt + '}{4}{2} \u2014 {2}{3}{1' + fmt + '}{4}'
     color_fmt = '' if not color else FMT_GREEN if data[2] else FMT_RED
-    return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR)
+    if suffix is None:
+        suffix = ''
+
+    return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR) + suffix
 
 def format_open_closed(data):
     """Builds a formatted string with OPEN and/or CLOSED"""
