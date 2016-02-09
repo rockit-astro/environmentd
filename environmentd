@@ -74,7 +74,7 @@ SUPERWASP_QUERY_DELAY = 10
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
-    RangeWithLimits, Range, Set, Latest = range(4)
+    RangeWithLimits, Range, LatestWithLimits, Latest, Set = range(5)
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
@@ -111,16 +111,19 @@ class AggregateParameter:
             return (True, list(ret))
         else:
             if len(measurements) == 0:
-                return (False, 0)
+                return (False, (0, False))
 
-            date = measurements[0][self.name]
-            value = measurements[0]['date']
+            date = measurements[0]['date']
+            value = measurements[0][self.name]
             for measurement in measurements:
                 if measurement['date'] > date:
                     date = measurement['date']
                     value = measurement[self.name]
 
-        return (True, value)
+        safe = self._behaviour == AggregateBehaviour.Latest or \
+            (value > self._limits[0] and value < self._limits[1])
+
+        return (safe, (value, safe))
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 
