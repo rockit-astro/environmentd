@@ -22,6 +22,7 @@
 # pylint: disable=too-many-locals
 # pylint: disable=broad-except
 # pylint: disable=too-few-public-methods
+# pylint: disable=too-many-arguments
 
 from collections import deque
 import datetime
@@ -155,10 +156,11 @@ SUPERWASP_PARAMETERS = [
 
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, pyro_uri, query_delay, parameters):
+    def __init__(self, daemon_name, pyro_uri, query_delay, max_data_gap, parameters):
         self._daemon_name = daemon_name
         self._pyro_uri = pyro_uri
         self._query_delay = query_delay
+        self._max_data_gap = max_data_gap
         self._parameters = parameters
 
         # Place a hard limit on the number of stored measurements to simplify
@@ -184,7 +186,7 @@ class PyroWatcher:
                 if data is not None:
                     # Pryo doesn't deserialize dates, so we manually manage this.
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if now() - data['date'] > TIME_GAP_MAX:
+                    if now() - data['date'] > self._max_data_gap:
                         print('{} WARNING: recieved stale data from {}: {}' \
                         .format(now(), self._daemon_name, data['date']))
 
@@ -198,7 +200,7 @@ class PyroWatcher:
 
             time.sleep(self._query_delay)
 
-    def status(self, max_first_date, min_last_date):
+    def status(self):
         """Queries the aggregate status of the vaisala weather station.
            Returns a tuple of observability and data"""
 
@@ -207,6 +209,12 @@ class PyroWatcher:
         queue_start = None
         queue_len = 0
         sufficient_data = True
+
+        # The youngest date that the first measurement can take while remaining valid
+        max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
+
+        # The oldest date that the last measurement can take while remaining valid
+        min_last_date = datetime.datetime.utcnow() - self._max_data_gap
 
         # check if we have sufficient data
         measurements_in_window = []
@@ -226,7 +234,7 @@ class PyroWatcher:
                 if measurement_start is None:
                     measurement_start = date
 
-                if date - measurement_end > TIME_GAP_MAX:
+                if date - measurement_end > self._max_data_gap:
                     sufficient_data = False
 
                 measurements_in_window.append(measurement)
@@ -276,25 +284,22 @@ class EnvironmentDaemon:
 
     def __init__(self):
         self._watchers = [
-            PyroWatcher('vaisala', VAISALA_URI, VAISALA_QUERY_DELAY, VAISALA_PARAMETERS),
-            PyroWatcher('roomalert', ROOMALERT_URI, ROOMALERT_QUERY_DELAY, ROOMALERT_PARAMETERS),
-            PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, SUPERWASP_PARAMETERS)
+            PyroWatcher('vaisala', VAISALA_URI, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
+                        VAISALA_PARAMETERS),
+            PyroWatcher('roomalert', ROOMALERT_URI, ROOMALERT_QUERY_DELAY, TIME_GAP_MAX,
+                        ROOMALERT_PARAMETERS),
+            PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
+                        SUPERWASP_PARAMETERS),
         ]
 
     def status(self):
         """Returns the aggregated status of the monitored daemons.
            Each measurement is a tuple of min value, max value, measurement valid
         """
-        # The youngest date that the first measurement can take while remaining valid
-        max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
-
-        # The oldest date that the last measurement can take while remaining valid
-        min_last_date = datetime.datetime.utcnow() - TIME_GAP_MAX
-
         can_observe = True
         ret = {}
         for watcher in self._watchers:
-            obs, data = watcher.status(max_first_date, min_last_date)
+            obs, data = watcher.status()
             can_observe = can_observe and obs
             ret.update(data)
 
