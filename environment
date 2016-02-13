@@ -32,6 +32,7 @@ PYRO_COMM_TIMEOUT = 5
 
 PYRO_URI = 'PYRO:' + PYRO_NAME + '@' + PYRO_HOST + ':' + str(PYRO_PORT)
 SCRIPT_NAME = os.path.basename(sys.argv[0])
+sys.excepthook = Pyro4.util.excepthook
 
 FMT_GREEN = u'\033[92m'
 FMT_RED = u'\033[91m'
