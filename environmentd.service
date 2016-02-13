@@ -1,10 +1,12 @@
 [Unit]
 Description=Daemon for exposing recent dome environment conditions via Pyro.
 After=syslog.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
-Type=simple
 Restart=on-failure
+Type=simple
 ExecStart=/usr/bin/env python3 -u /usr/bin/environmentd
 StandardOutput=syslog
 StandardError=syslog
