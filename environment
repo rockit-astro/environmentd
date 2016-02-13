@@ -69,8 +69,8 @@ def print_status():
             print('Vaisala data from ' + format_range(vaisala_data, ':'))
             print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h'))
             print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa'))
-            print('   N2 Plant Temp.: ' + format_range(status['vaisala_temperature'], '\u2103'))
-            print('    N2 Plant Hum.: ' + format_range(status['vaisala_relative_humidity'],
+            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u2103'))
+            print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
                                                        ' %RH'))
             print()
         else:
