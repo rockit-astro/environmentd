@@ -142,8 +142,6 @@ VAISALA_PARAMETERS = [
 ]
 
 ROOMALERT_PARAMETERS = [
-    AggregateParameter('external_temp', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
-    AggregateParameter('external_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
     AggregateParameter('internal_temp', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
     AggregateParameter('internal_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
 
