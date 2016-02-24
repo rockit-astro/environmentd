@@ -69,6 +69,8 @@ def print_status():
                             status['vaisala_sufficient_data'])
             print('Vaisala data from ' + format_range(vaisala_data, ':'))
             print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h'))
+            print('      Median Wind: ' + format_single(status['vaisala_median_wind_speed'],
+                                                        ' km/h'))
             print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa'))
             print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u2103'))
             print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
@@ -129,9 +131,9 @@ def print_status():
             data_bytes = status['diskspace_data_fs_available_bytes']
             data_gb = (round(data_bytes[0] / 2**30), data_bytes[1])
             suffix = ' GiB ({}) available'.format(
-                format_latest(status['diskspace_data_fs_percent_available'], '%'))
+                format_single(status['diskspace_data_fs_percent_available'], '%'))
             print('Disk space at ' + FMT_BOLD + time.strftime('%H:%M:%S') + FMT_CLEAR + ':')
-            print('   Data Partition: ' + format_latest(data_gb, suffix))
+            print('   Data Partition: ' + format_single(data_gb, suffix))
         else:
             print(FMT_RED + FMT_BOLD + 'No disk space data available' + FMT_CLEAR)
         print()
@@ -161,7 +163,7 @@ def format_range(data, suffix=None, fmt=None, color=True):
 
     return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR) + suffix
 
-def format_latest(data, suffix=None, fmt=None, color=True):
+def format_single(data, suffix=None, fmt=None, color=True):
     """Builds a formatted string with a value"""
     fmt = '' if fmt is None else ':' + fmt
     fmt = '{1}{2}{0' + fmt + '}{3}'

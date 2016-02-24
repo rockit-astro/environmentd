@@ -149,7 +149,9 @@ class AggregateParameter:
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 
 VAISALA_PARAMETERS = [
-    AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 30)),
+    AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 40)),
+    AggregateParameter('median_wind_speed', AggregateBehaviour.MedianWithLimits,
+                       measurement_name='wind_speed', limits=(0, 25)),
     AggregateParameter('temperature', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
     AggregateParameter('relative_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
     AggregateParameter('pressure', AggregateBehaviour.RangeWithLimits, limits=(600, 1100)),
