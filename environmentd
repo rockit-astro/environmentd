@@ -23,10 +23,12 @@
 # pylint: disable=broad-except
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-return-statements
 
 from collections import deque
 import datetime
 import math
+import statistics
 import threading
 import time
 import Pyro4
@@ -81,7 +83,7 @@ DISKSPACE_QUERY_DELAY = 120
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
-    RangeWithLimits, Range, LatestWithLimits, Latest, Set = range(5)
+    RangeWithLimits, Range, MedianWithLimits, Median, LatestWithLimits, Latest, Set = range(7)
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
@@ -110,6 +112,17 @@ class AggregateParameter:
                 (low > self._limits[0] and high < self._limits[1])
 
             return (safe, (low, high, safe))
+        if self._behaviour == AggregateBehaviour.MedianWithLimits or \
+                self._behaviour == AggregateBehaviour.Median:
+
+            if len(measurements) == 0:
+                return (False, (0, False))
+
+            median = statistics.median([m[self._measurement_name] for m in measurements])
+            safe = self._behaviour == AggregateBehaviour.Median or \
+                (median > self._limits[0] and median < self._limits[1])
+
+            return (safe, (median, safe))
         elif self._behaviour == AggregateBehaviour.Set:
             ret = set()
             for measurement in measurements:
