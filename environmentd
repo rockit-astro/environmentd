@@ -212,76 +212,61 @@ class PyroWatcher:
             time.sleep(self._query_delay)
 
     def status(self):
-        """Queries the aggregate status of the vaisala weather station.
+        """Queries the aggregate status of the monitored daemon.
            Returns a tuple of observability and data"""
 
-        measurement_start = None
-        measurement_end = None
-        queue_start = None
-        queue_len = 0
-        sufficient_data = True
+        # We only trust the measurement data if
+        #   (a) we have at least one measurement before the start of the defined window
+        #   (b) the last measurement is no older than _max_data_gap
+        #   (c) the gaps between successive measurements is no greater than _max_data_gap
+        #       (checked in loop below)
+        # self._data is assumed to be chronologically ordered
+        window_start = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
+        sufficient_data = len(self._data) > 0 and self._data[0]['date'] < window_start and \
+            self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow()
 
-        # The youngest date that the first measurement can take while remaining valid
-        max_first_date = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
-
-        # The oldest date that the last measurement can take while remaining valid
-        min_last_date = datetime.datetime.utcnow() - self._max_data_gap
-
-        # check if we have sufficient data
         measurements_in_window = []
+        date = None
+        last_date = None
+
+        # Filter data for the measurements in our desired time window
         for measurement in self._data:
-            queue_len += 1
             date = measurement['date']
 
-            # This is the first measurement with a valid date
-            if queue_start is None:
-                queue_start = date
-
-            if measurement_end is None:
-                measurement_end = date
-
             # Only include measurements within the desired window
-            if date > max_first_date:
-                if measurement_start is None:
-                    measurement_start = date
-
-                if date - measurement_end > self._max_data_gap:
-                    sufficient_data = False
-
+            if date >= window_start:
                 measurements_in_window.append(measurement)
 
-            measurement_end = date
+                # Do not allow gaps within the measurement window
+                if last_date is not None and last_date - date > self._max_data_gap:
+                    sufficient_data = False
 
-        # Check that the first measurement was sufficiently old
-        if queue_start is None or queue_start > max_first_date:
-            sufficient_data = False
+            last_date = date
 
-        # Check the time between the last measurement and now
-        if measurement_end is None or measurement_end < min_last_date:
-            sufficient_data = False
-
+        measurements_in_window_count = len(measurements_in_window)
         data = {
             self._daemon_name+'_sufficient_data': sufficient_data,
-            self._daemon_name+'_queue_len': queue_len
+            self._daemon_name+'_queue_len': measurements_in_window_count
         }
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
         safe = sufficient_data
-        if queue_len > 0:
+        if measurements_in_window_count > 0:
             for param in self._parameters:
                 param_key = self._daemon_name+'_'+param.name
                 param_safe, param_value = param.aggregate(measurements_in_window)
                 data.update({param_key: param_value})
                 safe = safe and param_safe
 
+            measurement_start = measurements_in_window[0]['date']
+            measurement_end = measurements_in_window[-1]['date']
+
             data.update({
                 self._daemon_name+'_measurement_start':
                     measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
                 self._daemon_name+'_measurement_end':
                     measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                self._daemon_name+'_queue_start':
-                    queue_start.strftime('%Y-%m-%dT%H:%M:%SZ')
             })
 
         return (safe, data)
