@@ -85,10 +85,11 @@ class AggregateBehaviour:
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
-    def __init__(self, name, behaviour, limits=None):
+    def __init__(self, name, behaviour, limits=None, measurement_name=None):
         self.name = name
         self._behaviour = behaviour
         self._limits = limits
+        self._measurement_name = measurement_name if measurement_name is not None else name
 
     def aggregate(self, measurements):
         """Aggregate measurement data"""
@@ -98,10 +99,10 @@ class AggregateParameter:
             if len(measurements) == 0:
                 return (False, (0, 0, False))
 
-            low = measurements[0][self.name]
+            low = measurements[0][self._measurement_name]
             high = low
             for measurement in measurements:
-                value = measurement[self.name]
+                value = measurement[self._measurement_name]
                 low = min(value, low)
                 high = max(value, high)
 
@@ -112,7 +113,7 @@ class AggregateParameter:
         elif self._behaviour == AggregateBehaviour.Set:
             ret = set()
             for measurement in measurements:
-                ret.add(measurement[self.name])
+                ret.add(measurement[self._measurement_name])
 
             # set can't be serialized to JSON, so convert to list now
             return (True, list(ret))
@@ -121,11 +122,11 @@ class AggregateParameter:
                 return (False, (0, False))
 
             date = measurements[0]['date']
-            value = measurements[0][self.name]
+            value = measurements[0][self._measurement_name]
             for measurement in measurements:
                 if measurement['date'] > date:
                     date = measurement['date']
-                    value = measurement[self.name]
+                    value = measurement[self._measurement_name]
 
         safe = self._behaviour == AggregateBehaviour.Latest or \
             (value > self._limits[0] and value < self._limits[1])
