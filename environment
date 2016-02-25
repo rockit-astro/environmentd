@@ -82,7 +82,7 @@ def print_status():
                                                        valid=pressure_valid))
 
             temp_valid = False not in status['vaisala_temperature_valid']
-            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u2103',
+            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u00B0C',
                                                        valid=temp_valid))
 
 
@@ -104,13 +104,13 @@ def print_status():
                               status['roomalert_sufficient_data'])
             print('RoomAlert data from ' + format_range(roomalert_data, ':'))
             print('   Internal Temp.: ' + format_range(status['roomalert_internal_temp'],
-                                                       '\u2103'))
+                                                       '\u00B0C'))
             print('    Internal Hum.: ' + format_range(status['roomalert_internal_humidity'],
                                                        ' %RH'))
             print('      Truss Temp.: ' + format_range(status['roomalert_truss_temp'],
-                                                       '\u2103', color=False))
+                                                       '\u00B0C', color=False))
             print('     Server Temp.: ' + format_range(status['roomalert_roomalert_temp'],
-                                                       '\u2103', color=False))
+                                                       '\u00B0C', color=False))
             print('      Server Hum.: ' + format_range(status['roomalert_roomalert_humidity'],
                                                        ' %RH', color=False))
             print('       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
@@ -130,9 +130,9 @@ def print_status():
                               status['superwasp_sufficient_data'])
             print('SuperWASP data from ' + format_range(superwasp_data) + ':')
             print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
-            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u2103'))
+            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C'))
             print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
-                                                       '\u2103', fmt='.2f'))
+                                                       '\u00B0C', fmt='.2f'))
         else:
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
