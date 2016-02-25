@@ -152,11 +152,16 @@ class AggregateParameter:
 
 VAISALA_PARAMETERS = [
     AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 40)),
+    AggregateParameter('wind_speed_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
     AggregateParameter('median_wind_speed', AggregateBehaviour.MedianWithLimits,
                        measurement_name='wind_speed', limits=(0, 25)),
     AggregateParameter('temperature', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
+    AggregateParameter('temperature_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
     AggregateParameter('relative_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+    AggregateParameter('relative_humidity_valid', AggregateBehaviour.Set,
+                       valid_set_values=set([True])),
     AggregateParameter('pressure', AggregateBehaviour.RangeWithLimits, limits=(600, 1100)),
+    AggregateParameter('pressure_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
 ]
 
 ROOMALERT_PARAMETERS = [

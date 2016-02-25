@@ -18,6 +18,8 @@
 """Commandline client for communicating with environmentd"""
 
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-locals
 
 import datetime
 import json
@@ -68,13 +70,25 @@ def print_status():
                             vaisala_end.strftime('%H:%M:%S'),
                             status['vaisala_sufficient_data'])
             print('Vaisala data from ' + format_range(vaisala_data, ':'))
-            print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h'))
+
+            wind_valid = False not in status['vaisala_wind_speed_valid']
+            print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h',
+                                                       valid=wind_valid))
             print('      Median Wind: ' + format_single(status['vaisala_median_wind_speed'],
                                                         ' km/h'))
-            print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa'))
-            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u2103'))
+
+            pressure_valid = False not in status['vaisala_pressure_valid']
+            print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa',
+                                                       valid=pressure_valid))
+
+            temp_valid = False not in status['vaisala_temperature_valid']
+            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u2103',
+                                                       valid=temp_valid))
+
+
+            humidity_valid = False not in status['vaisala_relative_humidity_valid']
             print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
-                                                       ' %RH'))
+                                                       ' %RH', valid=humidity_valid))
             print()
         else:
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
@@ -153,13 +167,16 @@ def print_json():
 
     return 0
 
-def format_range(data, suffix=None, fmt=None, color=True):
+def format_range(data, suffix=None, fmt=None, color=True, valid=True):
     """Builds a formatted string with a value range"""
     fmt = '' if fmt is None else ':' + fmt
     fmt = '{2}{3}{0' + fmt + '}{4}{2} \u2014 {2}{3}{1' + fmt + '}{4}'
     color_fmt = '' if not color else FMT_GREEN if data[2] else FMT_RED
     if suffix is None:
         suffix = ''
+
+    if not valid:
+        suffix += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
 
     return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR) + suffix
 
