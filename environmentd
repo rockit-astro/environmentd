@@ -87,10 +87,11 @@ class AggregateBehaviour:
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
-    def __init__(self, name, behaviour, limits=None, measurement_name=None):
+    def __init__(self, name, behaviour, limits=None, valid_set_values=None, measurement_name=None):
         self.name = name
         self._behaviour = behaviour
         self._limits = limits
+        self._valid_set_values = valid_set_values
         self._measurement_name = measurement_name if measurement_name is not None else name
 
     def aggregate(self, measurements):
@@ -128,8 +129,9 @@ class AggregateParameter:
             for measurement in measurements:
                 ret.add(measurement[self._measurement_name])
 
+            safe = self._valid_set_values is None or len(ret - self._valid_set_values) == 0
             # set can't be serialized to JSON, so convert to list now
-            return (True, list(ret))
+            return (safe, list(ret))
         else:
             if len(measurements) == 0:
                 return (False, (0, False))
