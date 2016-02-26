@@ -56,12 +56,15 @@ DISKSPACE_HOST = '192.168.0.101'
 DISKSPACE_PORT = 9008
 DISKSPACE_NAME = 'diskspace_daemon'
 
-# TODO: Include UPS status
+POWER_HOST = '192.168.0.102'
+POWER_PORT = 9009
+POWER_NAME = 'power_daemon'
 
 VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
 ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
 SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
 DISKSPACE_URI = 'PYRO:' + DISKSPACE_NAME + '@' + DISKSPACE_HOST + ':' + str(DISKSPACE_PORT)
+POWER_URI = 'PYRO:' + POWER_NAME + '@' + POWER_HOST + ':' + str(POWER_PORT)
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -79,6 +82,7 @@ DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=5)
 VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
+POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 120
 
 class AggregateBehaviour:
@@ -186,6 +190,17 @@ DISKSPACE_PARAMETERS = [
                        limits=(5 * 2**30, 2**40)),
     AggregateParameter('data_fs_percent_available', AggregateBehaviour.LatestWithLimits,
                        limits=(5, 100)),
+]
+
+POWER_PARAMETERS = [
+    AggregateParameter('main_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
+    AggregateParameter('main_ups_battery_healthy', AggregateBehaviour.Set),
+    AggregateParameter('main_ups_battery_remaining', AggregateBehaviour.RangeWithLimits,
+                       limits=(85, 101)),
+    AggregateParameter('dome_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
+    AggregateParameter('dome_ups_battery_healthy', AggregateBehaviour.Set),
+    AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.RangeWithLimits,
+                       limits=(85, 101)),
 ]
 
 class PyroWatcher:
@@ -310,7 +325,8 @@ class EnvironmentDaemon:
             PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
                         SUPERWASP_PARAMETERS),
             PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
-                        DISKSPACE_PARAMETERS)
+                        DISKSPACE_PARAMETERS),
+            PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX, POWER_PARAMETERS)
         ]
 
     def status(self):

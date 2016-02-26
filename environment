@@ -36,10 +36,26 @@ PYRO_URI = 'PYRO:' + PYRO_NAME + '@' + PYRO_HOST + ':' + str(PYRO_PORT)
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
 
+FMT_YELLOW = u'\033[93m'
 FMT_GREEN = u'\033[92m'
 FMT_RED = u'\033[91m'
 FMT_BOLD = u'\033[1m'
 FMT_CLEAR = u'\033[0m'
+
+UPS_STATUS = {
+    1: FMT_BOLD + FMT_RED + 'UNKNOWN' + FMT_CLEAR,
+    2: FMT_BOLD + FMT_GREEN + 'ONLINE' + FMT_CLEAR,
+    3: FMT_BOLD + FMT_YELLOW + 'ON BATTERY' + FMT_CLEAR,
+    4: FMT_BOLD + FMT_RED + 'SMART BOOST' + FMT_CLEAR,
+    5: FMT_BOLD + FMT_RED + 'TIMED SLEEPING' + FMT_CLEAR,
+    6: FMT_BOLD + FMT_RED + 'SOFTWARE BYPASS' + FMT_CLEAR,
+    7: FMT_BOLD + FMT_RED + 'OFF' + FMT_CLEAR,
+    8: FMT_BOLD + FMT_RED + 'REBOOTING' + FMT_CLEAR,
+    9: FMT_BOLD + FMT_RED + 'SWITCHED BYPASS' + FMT_CLEAR,
+    10: FMT_BOLD + FMT_RED + 'HARDWARE FAILURE BYPASS' + FMT_CLEAR,
+    11: FMT_BOLD + FMT_RED + 'SLEEPING UNTIL POWER RETURNS' + FMT_CLEAR,
+    12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR,
+}
 
 def print_status():
     """Prints the latest environment data in human-readable form"""
@@ -111,6 +127,14 @@ def print_status():
                                                        '\u00B0C', fmt='.2f'))
         else:
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
+        print()
+
+        if status['power_queue_len'] > 0:
+            print('UPS data from ' + format_date(status, 'power'))
+            print('         Main UPS: ' + format_ups(status, 'power_main_ups'))
+            print('         Dome UPS: ' + format_ups(status, 'power_dome_ups'))
+        else:
+            print(FMT_RED + FMT_BOLD + 'No UPS data available' + FMT_CLEAR)
         print()
 
         if status['diskspace_queue_len'] > 0:
@@ -187,6 +211,20 @@ def format_open_closed(data):
         string += "CLOSED"
     return FMT_BOLD + string + FMT_CLEAR
 
+def format_ups(data, prefix):
+    """Builds a formatted string for a UPS status"""
+    battery = format_range(data[prefix + '_battery_remaining'], '%', fmt='')
+    ret = ''
+    for status in data[prefix + '_status']:
+        if len(ret) > 0:
+            ret += ', '
+        ret += UPS_STATUS[status]
+    ret += ' (' + battery + ' battery)'
+
+    if False in data[prefix + '_battery_healthy']:
+        ret += FMT_BOLD + FMT_YELLOW + ' REPLACE BATTERY' + FMT_CLEAR
+
+    return ret
 
 def print_usage(name):
     """Prints the utility help"""
