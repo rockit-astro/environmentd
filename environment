@@ -138,15 +138,12 @@ def print_status():
         print()
 
         if status['diskspace_queue_len'] > 0:
-            time = datetime.datetime.strptime(
-                status['diskspace_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-
             # Convert from bytes to GiB
             data_bytes = status['diskspace_data_fs_available_bytes']
             data_gb = (round(data_bytes[0] / 2**30, 1), data_bytes[1])
             suffix = ' GiB ({}) available'.format(
                 format_single(status['diskspace_data_fs_percent_available'], '%', fmt=''))
-            print('Disk space at ' + FMT_BOLD + time.strftime('%H:%M:%S') + FMT_CLEAR + ':')
+            print('Disk space from ' + format_date(status, 'diskspace'))
             print('   Data Partition: ' + format_single(data_gb, suffix))
         else:
             print(FMT_RED + FMT_BOLD + 'No disk space data available' + FMT_CLEAR)
