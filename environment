@@ -61,15 +61,7 @@ def print_status():
         print()
 
         if status['vaisala_queue_len'] > 0:
-            vaisala_start = datetime.datetime.strptime(
-                status['vaisala_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-            vaisala_end = datetime.datetime.strptime(
-                status['vaisala_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-
-            vaisala_data = (vaisala_start.strftime('%H:%M:%S'),
-                            vaisala_end.strftime('%H:%M:%S'),
-                            status['vaisala_sufficient_data'])
-            print('Vaisala data from ' + format_range(vaisala_data, ':'))
+            print('Vaisala data from ' + format_date(status, 'vaisala'))
 
             wind_valid = False not in status['vaisala_wind_speed_valid']
             print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h',
@@ -94,15 +86,7 @@ def print_status():
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
 
         if status['roomalert_queue_len'] > 0:
-            roomalert_start = datetime.datetime.strptime(
-                status['roomalert_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-            roomalert_end = datetime.datetime.strptime(
-                status['roomalert_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-
-            roomalert_data = (roomalert_start.strftime('%H:%M:%S'),
-                              roomalert_end.strftime('%H:%M:%S'),
-                              status['roomalert_sufficient_data'])
-            print('RoomAlert data from ' + format_range(roomalert_data, ':'))
+            print('RoomAlert data from ' + format_date(status, 'roomalert'))
             print('   Internal Temp.: ' + format_range(status['roomalert_internal_temp'],
                                                        '\u00B0C'))
             print('    Internal Hum.: ' + format_range(status['roomalert_internal_humidity'],
@@ -120,15 +104,7 @@ def print_status():
         print()
 
         if status['superwasp_queue_len'] > 0:
-            superwasp_start = datetime.datetime.strptime(
-                status['superwasp_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-            superwasp_end = datetime.datetime.strptime(
-                status['superwasp_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-
-            superwasp_data = (superwasp_start.strftime('%H:%M:%S'),
-                              superwasp_end.strftime('%H:%M:%S'),
-                              status['superwasp_sufficient_data'])
-            print('SuperWASP data from ' + format_range(superwasp_data) + ':')
+            print('SuperWASP data from ' + format_date(status, 'superwasp'))
             print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
             print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C'))
             print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
@@ -143,9 +119,9 @@ def print_status():
 
             # Convert from bytes to GiB
             data_bytes = status['diskspace_data_fs_available_bytes']
-            data_gb = (round(data_bytes[0] / 2**30), data_bytes[1])
+            data_gb = (round(data_bytes[0] / 2**30, 1), data_bytes[1])
             suffix = ' GiB ({}) available'.format(
-                format_single(status['diskspace_data_fs_percent_available'], '%'))
+                format_single(status['diskspace_data_fs_percent_available'], '%', fmt=''))
             print('Disk space at ' + FMT_BOLD + time.strftime('%H:%M:%S') + FMT_CLEAR + ':')
             print('   Data Partition: ' + format_single(data_gb, suffix))
         else:
@@ -167,28 +143,38 @@ def print_json():
 
     return 0
 
-def format_range(data, suffix=None, fmt=None, color=True, valid=True):
+def format_date(data, group):
+    """Builds a formatted date string for the named data group"""
+    start = datetime.datetime.strptime(data[group + '_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
+    end = datetime.datetime.strptime(data[group + '_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
+    data = (start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'), data[group + '_sufficient_data'])
+    return format_range(data, ':', fmt='')
+
+def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
     """Builds a formatted string with a value range"""
-    fmt = '' if fmt is None else ':' + fmt
-    fmt = '{2}{3}{0' + fmt + '}{4}{2} \u2014 {2}{3}{1' + fmt + '}{4}'
-    color_fmt = '' if not color else FMT_GREEN if data[2] else FMT_RED
-    if suffix is None:
-        suffix = ''
+    if fmt != '':
+        fmt = ':' + fmt
+
+    color_fmt = FMT_BOLD + ('' if not color else FMT_GREEN if data[2] else FMT_RED)
+    min_value = color_fmt + ('{0' + fmt +'}').format(data[0]) + FMT_CLEAR
+    max_value = color_fmt + ('{0' + fmt +'}').format(data[1]) + FMT_CLEAR
+
+    # Show a single value if min and max are the same
+    if data[0] == data[1]:
+        ret = min_value
+    else:
+        ret = min_value + FMT_BOLD + ' \u2014 ' + FMT_CLEAR + max_value
+
+    ret += suffix
 
     if not valid:
-        suffix += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
+        ret += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
 
-    return fmt.format(data[0], data[1], color_fmt, FMT_BOLD, FMT_CLEAR) + suffix
+    return ret
 
-def format_single(data, suffix=None, fmt=None, color=True):
+def format_single(data, suffix='', fmt='.1f', color=True):
     """Builds a formatted string with a value"""
-    fmt = '' if fmt is None else ':' + fmt
-    fmt = '{1}{2}{0' + fmt + '}{3}'
-    color_fmt = '' if not color else FMT_GREEN if data[1] else FMT_RED
-    if suffix is None:
-        suffix = ''
-
-    return fmt.format(data[0], color_fmt, FMT_BOLD, FMT_CLEAR) + suffix
+    return format_range((data[0], data[0], data[1]), suffix=suffix, fmt=fmt, color=color)
 
 def format_open_closed(data):
     """Builds a formatted string with OPEN and/or CLOSED"""
