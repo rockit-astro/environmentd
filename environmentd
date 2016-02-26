@@ -69,13 +69,14 @@ POWER_URI = 'PYRO:' + POWER_NAME + '@' + POWER_HOST + ':' + str(POWER_PORT)
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
 # to the initial startup, while we wait to build sufficient history.
-CONDITION_TIMEOUT_DELAY = datetime.timedelta(minutes=20)
+CONDITION_WINDOW_LENGTH = datetime.timedelta(minutes=20)
+DISKSPACE_WINDOW_LENGTH = datetime.timedelta(minutes=2)
 
 # Maximum gap that we will accept between measurements (due to query failures,
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
 TIME_GAP_MAX = datetime.timedelta(seconds=30)
-DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=5)
+DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=1)
 
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
@@ -83,7 +84,7 @@ VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
 POWER_QUERY_DELAY = 10
-DISKSPACE_QUERY_DELAY = 120
+DISKSPACE_QUERY_DELAY = 30
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
@@ -205,16 +206,18 @@ POWER_PARAMETERS = [
 
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, pyro_uri, query_delay, max_data_gap, parameters):
+    def __init__(self, daemon_name, pyro_uri, query_delay, max_data_gap, window_length,
+                 parameters):
         self._daemon_name = daemon_name
         self._pyro_uri = pyro_uri
         self._query_delay = query_delay
         self._max_data_gap = max_data_gap
+        self._window_length = window_length
         self._parameters = parameters
 
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
-        queue_len = CONDITION_TIMEOUT_DELAY.seconds * \
+        queue_len = window_length.seconds * \
             1.1 / query_delay
         self._data = deque(maxlen=math.ceil(queue_len))
 
@@ -259,7 +262,7 @@ class PyroWatcher:
         #   (c) the gaps between successive measurements is no greater than _max_data_gap
         #       (checked in loop below)
         # self._data is assumed to be chronologically ordered
-        window_start = datetime.datetime.utcnow() - CONDITION_TIMEOUT_DELAY
+        window_start = datetime.datetime.utcnow() - self._window_length
         sufficient_data = len(self._data) > 0 and self._data[0]['date'] < window_start and \
             self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow()
 
@@ -319,14 +322,15 @@ class EnvironmentDaemon:
     def __init__(self):
         self._watchers = [
             PyroWatcher('vaisala', VAISALA_URI, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
-                        VAISALA_PARAMETERS),
+                        CONDITION_WINDOW_LENGTH, VAISALA_PARAMETERS),
             PyroWatcher('roomalert', ROOMALERT_URI, ROOMALERT_QUERY_DELAY, TIME_GAP_MAX,
-                        ROOMALERT_PARAMETERS),
+                        CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
             PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
-                        SUPERWASP_PARAMETERS),
+                        CONDITION_WINDOW_LENGTH, SUPERWASP_PARAMETERS),
             PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
-                        DISKSPACE_PARAMETERS),
-            PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX, POWER_PARAMETERS)
+                        DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
+            PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX,
+                        CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
         ]
 
     def status(self):
