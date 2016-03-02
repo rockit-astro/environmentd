@@ -182,8 +182,8 @@ ROOMALERT_PARAMETERS = [
 
 SUPERWASP_PARAMETERS = [
     AggregateParameter('sky_temp', AggregateBehaviour.RangeWithLimits, limits=(-100, -30)),
-    AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
-    AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+    #AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
+    #AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
 ]
 
 DISKSPACE_PARAMETERS = [

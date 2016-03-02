@@ -121,10 +121,10 @@ def print_status():
 
         if status['superwasp_queue_len'] > 0:
             print('SuperWASP data from ' + format_date(status, 'superwasp'))
-            print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
+            #print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
             print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C'))
-            print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
-                                                       '\u00B0C', fmt='.2f'))
+            #print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
+            #                                           '\u00B0C', fmt='.2f'))
         else:
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
