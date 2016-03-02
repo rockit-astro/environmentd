@@ -1,12 +1,12 @@
 Name:      onemetre-environment-server
-Version:   1.9
+Version:   1.10
 Release:   1
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick one-metre telescope.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
-Requires:  python3, %{?systemd_requires}
+Requires:  python3, python3-Pyro4, %{?systemd_requires}
 BuildRequires: systemd-rpm-macros
 
 %description
@@ -27,10 +27,6 @@ mkdir -p %{buildroot}%{_unitdir}
 %post
 %service_add_post environmentd.service
 %fillup_and_insserv -f -y environmentd.service
-
-# Install python dependencies
-# This is horrible, but it seems to be the only way that actually works!
-pip3 install Pyro4
 
 %preun
 %stop_on_removal environmentd.service
