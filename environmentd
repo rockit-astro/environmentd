@@ -52,6 +52,10 @@ SUPERWASP_HOST = '192.168.0.102'
 SUPERWASP_PORT = 9007
 SUPERWASP_NAME = 'superwasp_daemon'
 
+TNG_HOST = '192.168.0.102'
+TNG_PORT = 9011
+TNG_NAME = 'tng_daemon'
+
 DISKSPACE_HOST = '192.168.0.101'
 DISKSPACE_PORT = 9008
 DISKSPACE_NAME = 'diskspace_daemon'
@@ -63,6 +67,7 @@ POWER_NAME = 'power_daemon'
 VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
 ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
 SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
+TNG_URI = 'PYRO:' + TNG_NAME + '@' + TNG_HOST + ':' + str(TNG_PORT)
 DISKSPACE_URI = 'PYRO:' + DISKSPACE_NAME + '@' + DISKSPACE_HOST + ':' + str(DISKSPACE_PORT)
 POWER_URI = 'PYRO:' + POWER_NAME + '@' + POWER_HOST + ':' + str(POWER_PORT)
 
@@ -76,13 +81,14 @@ DISKSPACE_WINDOW_LENGTH = datetime.timedelta(minutes=2)
 # etc). If this is exceeded, then we will force the dome to close until the
 # condition timeout passes.
 TIME_GAP_MAX = datetime.timedelta(seconds=30)
+TNG_TIME_GAP_MAX = datetime.timedelta(minutes=10)
 DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=1)
-
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
 ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
+TNG_QUERY_DELAY = 300
 POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 30
 
@@ -184,6 +190,10 @@ SUPERWASP_PARAMETERS = [
     AggregateParameter('sky_temp', AggregateBehaviour.RangeWithLimits, limits=(-100, -30)),
     #AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
     #AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+]
+
+TNG_PARAMETERS = [
+    AggregateParameter('dust', AggregateBehaviour.RangeWithLimits, limits=(0, 50))
 ]
 
 DISKSPACE_PARAMETERS = [
@@ -327,6 +337,8 @@ class EnvironmentDaemon:
                         CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
             PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
                         CONDITION_WINDOW_LENGTH, SUPERWASP_PARAMETERS),
+            PyroWatcher('tng', TNG_URI, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
+                        CONDITION_WINDOW_LENGTH, TNG_PARAMETERS),
             PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
                         DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
             PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX,

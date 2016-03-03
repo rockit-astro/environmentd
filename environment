@@ -129,6 +129,13 @@ def print_status():
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
 
+        if status['tng_queue_len'] > 0:
+            print('TNG data from ' + format_date(status, 'tng'))
+            print('       Dust Conc.: ' + format_range(status['tng_dust'], ' ug/m\u00B3'))
+        else:
+            print(FMT_RED + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
+        print()
+
         if status['power_queue_len'] > 0:
             print('UPS data from ' + format_date(status, 'power'))
             print('         Main UPS: ' + format_ups(status, 'power_main_ups'))
