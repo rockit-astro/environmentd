@@ -93,10 +93,13 @@ def print_status():
             print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u00B0C',
                                                        valid=temp_valid))
 
-
             humidity_valid = False not in status['vaisala_relative_humidity_valid']
             print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
                                                        ' %RH', valid=humidity_valid))
+
+            accumulated_rain_valid = False not in status['vaisala_accumulated_rain_valid']
+            print('Accumulated Rain.: ' + format_range(status['vaisala_accumulated_rain'], ' mm',
+                                                       fmt='.2f', valid=accumulated_rain_valid))
             print()
         else:
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)

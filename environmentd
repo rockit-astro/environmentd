@@ -173,6 +173,9 @@ VAISALA_PARAMETERS = [
                        valid_set_values=set([True])),
     AggregateParameter('pressure', AggregateBehaviour.RangeWithLimits, limits=(600, 1100)),
     AggregateParameter('pressure_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
+    AggregateParameter('accumulated_rain', AggregateBehaviour.RangeWithLimits, limits=(0, 0)),
+    AggregateParameter('accumulated_rain_valid', AggregateBehaviour.Set,
+                       valid_set_values=set([True])),
 ]
 
 ROOMALERT_PARAMETERS = [
