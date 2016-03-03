@@ -60,6 +60,10 @@ DISKSPACE_HOST = '192.168.0.101'
 DISKSPACE_PORT = 9008
 DISKSPACE_NAME = 'diskspace_daemon'
 
+NETPING_HOST = '192.168.0.102'
+NETPING_PORT = 9012
+NETPING_NAME = 'netping_daemon'
+
 POWER_HOST = '192.168.0.102'
 POWER_PORT = 9009
 POWER_NAME = 'power_daemon'
@@ -69,6 +73,7 @@ ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOM
 SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
 TNG_URI = 'PYRO:' + TNG_NAME + '@' + TNG_HOST + ':' + str(TNG_PORT)
 DISKSPACE_URI = 'PYRO:' + DISKSPACE_NAME + '@' + DISKSPACE_HOST + ':' + str(DISKSPACE_PORT)
+NETPING_URI = 'PYRO:' + NETPING_NAME + '@' + NETPING_HOST + ':' + str(NETPING_PORT)
 POWER_URI = 'PYRO:' + POWER_NAME + '@' + POWER_HOST + ':' + str(POWER_PORT)
 
 # Delay (in seconds) that we must wait after weather conditions return to
@@ -83,6 +88,8 @@ DISKSPACE_WINDOW_LENGTH = datetime.timedelta(minutes=2)
 TIME_GAP_MAX = datetime.timedelta(seconds=30)
 TNG_TIME_GAP_MAX = datetime.timedelta(minutes=10)
 DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=1)
+NETPING_TIME_GAP_MAX = datetime.timedelta(minutes=1)
+
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
@@ -91,6 +98,7 @@ SUPERWASP_QUERY_DELAY = 10
 TNG_QUERY_DELAY = 300
 POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 30
+NETPING_QUERY_DELAY = 30
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
@@ -204,6 +212,11 @@ DISKSPACE_PARAMETERS = [
                        limits=(5 * 2**30, 2**40)),
     AggregateParameter('data_fs_percent_available', AggregateBehaviour.LatestWithLimits,
                        limits=(5, 100)),
+]
+
+NETPING_PARAMETERS = [
+    AggregateParameter('google', AggregateBehaviour.RangeWithLimits, limits=(0, 2000)),
+    AggregateParameter('ngtshead', AggregateBehaviour.RangeWithLimits, limits=(0, 2000)),
 ]
 
 POWER_PARAMETERS = [
@@ -344,6 +357,8 @@ class EnvironmentDaemon:
                         CONDITION_WINDOW_LENGTH, TNG_PARAMETERS),
             PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
                         DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
+            PyroWatcher('netping', NETPING_URI, NETPING_QUERY_DELAY, NETPING_TIME_GAP_MAX,
+                        CONDITION_WINDOW_LENGTH, NETPING_PARAMETERS),
             PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX,
                         CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
         ]

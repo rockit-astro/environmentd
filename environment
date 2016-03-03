@@ -147,6 +147,14 @@ def print_status():
             print(FMT_RED + FMT_BOLD + 'No UPS data available' + FMT_CLEAR)
         print()
 
+        if status['netping_queue_len'] > 0:
+            print('Network ping data from ' + format_date(status, 'netping'))
+            print('           Google: ' + format_range(status['netping_google'], ' ms'))
+            print('         NGTSHead: ' + format_range(status['netping_ngtshead'], ' ms'))
+        else:
+            print(FMT_RED + FMT_BOLD + 'No ping data available' + FMT_CLEAR)
+        print()
+
         if status['diskspace_queue_len'] > 0:
             # Convert from bytes to GiB
             data_bytes = status['diskspace_data_fs_available_bytes']
