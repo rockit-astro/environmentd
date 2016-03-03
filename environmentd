@@ -121,7 +121,7 @@ class AggregateParameter:
                 high = max(value, high)
 
             safe = self._behaviour == AggregateBehaviour.Range or \
-                (low > self._limits[0] and high < self._limits[1])
+                (low >= self._limits[0] and high <= self._limits[1])
 
             return (safe, (low, high, safe))
         if self._behaviour == AggregateBehaviour.MedianWithLimits or \
@@ -132,7 +132,7 @@ class AggregateParameter:
 
             median = statistics.median([m[self._measurement_name] for m in measurements])
             safe = self._behaviour == AggregateBehaviour.Median or \
-                (median > self._limits[0] and median < self._limits[1])
+                (median >= self._limits[0] and median <= self._limits[1])
 
             return (safe, (median, safe))
         elif self._behaviour == AggregateBehaviour.Set:
@@ -155,7 +155,7 @@ class AggregateParameter:
                     value = measurement[self._measurement_name]
 
         safe = self._behaviour == AggregateBehaviour.Latest or \
-            (value > self._limits[0] and value < self._limits[1])
+            (value >= self._limits[0] and value <= self._limits[1])
 
         return (safe, (value, safe))
 
