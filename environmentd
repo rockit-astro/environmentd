@@ -419,6 +419,7 @@ class EnvironmentDaemon:
                         CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
         ]
 
+    @Pyro4.expose
     def status(self):
         """Returns the aggregated status of the monitored daemons.
            Each measurement is a tuple of min value, max value, measurement valid
@@ -433,6 +434,7 @@ class EnvironmentDaemon:
         ret.update({'can_observe': can_observe})
         return ret
 
+    @Pyro4.expose
     def override_parameter_limits(self, watcher_name, parameter_name, disabled):
         """Disable or re-enable safety checking of a given parameter"""
         for watcher in self._watchers:
@@ -443,10 +445,12 @@ class EnvironmentDaemon:
 
         return DisableParameterStatus.InvalidWatcher
 
+    @Pyro4.expose
     def list_watchers(self):
         """Return a list of watcher names"""
         return [watcher.daemon_name for watcher in self._watchers]
 
+    @Pyro4.expose
     def list_limited_parameters(self, watcher_name):
         """Return a list of parameter names with limits for a given watcher"""
         for watcher in self._watchers:
@@ -454,6 +458,7 @@ class EnvironmentDaemon:
                 return watcher.parameters_with_limits()
         return []
 
+    @Pyro4.expose
     def clear_history(self):
         """Clear the cached measurements"""
         print('{} MESSAGE: clearing cached history' \
@@ -465,6 +470,7 @@ def spawn_daemon():
     """Spawns the daemon and registers it with Pyro"""
     Pyro4.config.COMMTIMEOUT = PYRO_COMM_TIMEOUT
     Pyro4.config.DETAILED_TRACEBACK = True
+    Pyro4.config.REQUIRE_EXPOSE = True
     pyro = Pyro4.Daemon(host=PYRO_HOST, port=PYRO_PORT)
 
     environment = EnvironmentDaemon()
