@@ -57,6 +57,20 @@ UPS_STATUS = {
     12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR,
 }
 
+class DisableParameterStatus:
+    """Return codes for ResetParameterStatus"""
+    Success, InvalidWatcher, InvalidParameter = range(3)
+
+class ParameterStatus:
+    """Status of a measurement parameter"""
+    Unsafe, Safe, Disabled = range(3)
+
+STATUS_COLORS = {
+    ParameterStatus.Unsafe: FMT_BOLD + FMT_RED,
+    ParameterStatus.Safe: FMT_BOLD + FMT_GREEN,
+    ParameterStatus.Disabled: FMT_BOLD
+}
+
 def print_status():
     """Prints the latest environment data in human-readable form"""
     status = None
@@ -186,7 +200,7 @@ def format_date(data, group):
     """Builds a formatted date string for the named data group"""
     start = datetime.datetime.strptime(data[group + '_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
     end = datetime.datetime.strptime(data[group + '_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-    data = (start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'), data[group + '_sufficient_data'])
+    data = (start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'), data[group + '_data_status'])
     return format_range(data, ':', fmt='')
 
 def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
@@ -194,7 +208,7 @@ def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
     if fmt != '':
         fmt = ':' + fmt
 
-    color_fmt = FMT_BOLD + ('' if not color else FMT_GREEN if data[2] else FMT_RED)
+    color_fmt = '' if not color else STATUS_COLORS[data[2]]
     min_value = color_fmt + ('{0' + fmt +'}').format(data[0]) + FMT_CLEAR
     max_value = color_fmt + ('{0' + fmt +'}').format(data[1]) + FMT_CLEAR
 
@@ -208,6 +222,9 @@ def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
 
     if not valid:
         ret += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
+
+    if data[2] == ParameterStatus.Disabled:
+        ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
 
     return ret
 
@@ -241,12 +258,69 @@ def format_ups(data, prefix):
 
     return ret
 
+def toggle_parameter(disable, args):
+    """Disable or re-enable a watcher parameter"""
+    arg_count = len(args)
+    if arg_count == 1 or arg_count == 2:
+        watcher = args[0]
+        parameter = args[1] if arg_count == 2 else None
+        try:
+            with Pyro4.Proxy(PYRO_URI) as environment:
+                ret = environment.disable_parameter(watcher, parameter, disable)
+                if ret == DisableParameterStatus.Success:
+                    return 0
+
+                if ret == DisableParameterStatus.InvalidWatcher:
+                    print('error: invalid id ' + watcher)
+                elif ret == DisableParameterStatus.InvalidParameter:
+                    print('error: invalid parameter ' + parameter)
+                else:
+                    print('error: unknown error code ' + str(ret))
+                return 1
+        except Pyro4.errors.CommunicationError:
+            print('error: unable to communicate with the environment daemon')
+            return 1
+
+    command = 'disable' if disable else 'enable'
+    print('usage: {} {} <watcher> [<parameter>]'.format(SCRIPT_NAME, command))
+    return 1
+
+def list_watchers():
+    """Print a list of watcher names (for use by bash completions)"""
+    try:
+        with Pyro4.Proxy(PYRO_URI) as environment:
+            names = environment.list_watchers()
+            print(' '.join(names))
+            return 0
+    except Pyro4.errors.CommunicationError:
+        print('')
+        return 1
+
+def list_parameters(args):
+    """Print a list of watcher parameter names (for use by bash completions)"""
+    if len(args) == 0:
+        print('')
+        return 1
+
+    try:
+        with Pyro4.Proxy(PYRO_URI) as environment:
+            names = environment.list_watcher_parameters(args[0])
+            print(' '.join(names))
+            return 0
+    except Pyro4.errors.CommunicationError:
+        print('')
+        return 1
+
 def print_usage(name):
     """Prints the utility help"""
     print('Usage: {} <command>'.format(name))
     print()
     print('   status      print a human-readable summary of the aggregated environment status')
     print('   json        print a machine-readable summary of the aggregated environment status')
+    print('   disable     temporarily disable triggering on an environment parameter')
+    print('   enable      re-enable triggering on an environment parameter')
+    # list_watchers and list_parameters are only useful for bash completion
+    # so they are not listed here
     print()
 
     return 1
@@ -260,6 +334,14 @@ if __name__ == '__main__':
         sys.exit(print_status())
     elif sys.argv[1] == 'json':
         sys.exit(print_json())
+    elif sys.argv[1] == 'disable':
+        sys.exit(toggle_parameter(True, sys.argv[2:]))
+    elif sys.argv[1] == 'enable':
+        sys.exit(toggle_parameter(False, sys.argv[2:]))
+    elif sys.argv[1] == 'list-watchers':
+        sys.exit(list_watchers())
+    elif sys.argv[1] == 'list-parameters':
+        sys.exit(list_parameters(sys.argv[2:]))
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))

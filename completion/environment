@@ -3,7 +3,26 @@ _environment()
     local cur opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    opts="status json"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="status json enable disable"
+
+    case "${prev}" in
+        enable)
+            # Fall through (bash >= 4 syntax)
+            ;&
+        disable)
+            local watchers=$(environment list-watchers)
+            COMPREPLY=($(compgen -W "${watchers}" -- ${cur}))
+            return 0
+            ;;
+        *)
+            local params=$(environment list-parameters ${prev})
+            if [ -n "${params}" ]; then
+                COMPREPLY=($(compgen -W "${params}" -- ${cur}))
+                return 0
+            fi
+            ;;
+    esac
 
     COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
     return 0

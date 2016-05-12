@@ -100,6 +100,14 @@ POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 30
 NETPING_QUERY_DELAY = 30
 
+class DisableParameterStatus:
+    """Return codes for ResetParameterStatus"""
+    Success, InvalidWatcher, InvalidParameter = range(3)
+
+class ParameterStatus:
+    """Status of a measurement parameter"""
+    Unsafe, Safe, Disabled = range(3)
+
 class AggregateBehaviour:
     """Aggregation behaviour"""
     RangeWithLimits, Range, MedianWithLimits, Median, LatestWithLimits, Latest, Set = range(7)
@@ -108,18 +116,24 @@ class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
     def __init__(self, name, behaviour, limits=None, valid_set_values=None, measurement_name=None):
         self.name = name
+        self.disabled = False
         self._behaviour = behaviour
         self._limits = limits
         self._valid_set_values = valid_set_values
         self._measurement_name = measurement_name if measurement_name is not None else name
 
+    def disable(self, disabled):
+        """Manually disable parameter for safety checks"""
+        self.disabled = disabled
+
     def aggregate(self, measurements):
         """Aggregate measurement data"""
+        status = ParameterStatus.Disabled if self.disabled else ParameterStatus.Unsafe
         if self._behaviour == AggregateBehaviour.RangeWithLimits or \
                 self._behaviour == AggregateBehaviour.Range:
 
             if len(measurements) == 0:
-                return (False, (0, 0, False))
+                return (status, (0, 0, status))
 
             low = measurements[0][self._measurement_name]
             high = low
@@ -128,32 +142,37 @@ class AggregateParameter:
                 low = min(value, low)
                 high = max(value, high)
 
-            safe = self._behaviour == AggregateBehaviour.Range or \
-                (low >= self._limits[0] and high <= self._limits[1])
+            if not self.disabled and (self._behaviour == AggregateBehaviour.Range or \
+                    (low >= self._limits[0] and high <= self._limits[1])):
+                status = ParameterStatus.Safe
 
-            return (safe, (low, high, safe))
+            return (status, (low, high, status))
         if self._behaviour == AggregateBehaviour.MedianWithLimits or \
                 self._behaviour == AggregateBehaviour.Median:
 
             if len(measurements) == 0:
-                return (False, (0, False))
+                return (status, (0, status))
 
             median = statistics.median([m[self._measurement_name] for m in measurements])
-            safe = self._behaviour == AggregateBehaviour.Median or \
-                (median >= self._limits[0] and median <= self._limits[1])
+            if not self.disabled and (self._behaviour == AggregateBehaviour.Median or \
+                    (median >= self._limits[0] and median <= self._limits[1])):
+                status = ParameterStatus.Safe
 
-            return (safe, (median, safe))
+            return (status, (median, status))
         elif self._behaviour == AggregateBehaviour.Set:
             ret = set()
             for measurement in measurements:
                 ret.add(measurement[self._measurement_name])
 
-            safe = self._valid_set_values is None or len(ret - self._valid_set_values) == 0
+            if not self.disabled and (self._valid_set_values is None or \
+                    len(ret - self._valid_set_values) == 0):
+                status = ParameterStatus.Safe
+
             # set can't be serialized to JSON, so convert to list now
-            return (safe, list(ret))
+            return (status, list(ret))
         else:
             if len(measurements) == 0:
-                return (False, (0, False))
+                return (status, (0, status))
 
             date = measurements[0]['date']
             value = measurements[0][self._measurement_name]
@@ -162,10 +181,11 @@ class AggregateParameter:
                     date = measurement['date']
                     value = measurement[self._measurement_name]
 
-        safe = self._behaviour == AggregateBehaviour.Latest or \
-            (value >= self._limits[0] and value <= self._limits[1])
+        if not self.disabled and (self._behaviour == AggregateBehaviour.Latest or \
+                (value >= self._limits[0] and value <= self._limits[1])):
+            status = ParameterStatus.Safe
 
-        return (safe, (value, safe))
+        return (status, (value, status))
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 
@@ -234,7 +254,7 @@ class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
     def __init__(self, daemon_name, pyro_uri, query_delay, max_data_gap, window_length,
                  parameters):
-        self._daemon_name = daemon_name
+        self.daemon_name = daemon_name
         self._pyro_uri = pyro_uri
         self._query_delay = query_delay
         self._max_data_gap = max_data_gap
@@ -266,15 +286,15 @@ class PyroWatcher:
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
                     if now() - data['date'] > self._max_data_gap:
                         print('{} WARNING: recieved stale data from {}: {}' \
-                        .format(now(), self._daemon_name, data['date']))
+                        .format(now(), self.daemon_name, data['date']))
 
                     self._data.append(data)
                 else:
                     print('{} WARNING: recieved empty data from {}' \
-                        .format(now(), self._daemon_name))
+                        .format(now(), self.daemon_name))
             except Exception as exception:
                 print('{} ERROR: failed to query from {}: {}' \
-                      .format(now(), self._daemon_name, str(exception)))
+                      .format(now(), self.daemon_name, str(exception)))
 
             time.sleep(self._query_delay)
 
@@ -289,8 +309,12 @@ class PyroWatcher:
         #       (checked in loop below)
         # self._data is assumed to be chronologically ordered
         window_start = datetime.datetime.utcnow() - self._window_length
-        sufficient_data = len(self._data) > 0 and self._data[0]['date'] < window_start and \
-            self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow()
+
+        all_disabled = all(param.disabled for param in self._parameters)
+        data_status = ParameterStatus.Disabled if all_disabled else ParameterStatus.Unsafe
+        if not all_disabled and len(self._data) > 0 and self._data[0]['date'] < window_start and \
+                self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow():
+            data_status = ParameterStatus.Safe
 
         measurements_in_window = []
         date = None
@@ -305,38 +329,54 @@ class PyroWatcher:
                 measurements_in_window.append(measurement)
 
                 # Do not allow gaps within the measurement window
-                if last_date is not None and last_date - date > self._max_data_gap:
-                    sufficient_data = False
+                if data_status == ParameterStatus.Safe and last_date is not None and \
+                        last_date - date > self._max_data_gap:
+                    data_status = ParameterStatus.Unsafe
 
             last_date = date
 
         measurements_in_window_count = len(measurements_in_window)
         data = {
-            self._daemon_name+'_sufficient_data': sufficient_data,
-            self._daemon_name+'_queue_len': measurements_in_window_count
+            self.daemon_name+'_data_status': data_status,
+            self.daemon_name+'_queue_len': measurements_in_window_count
         }
 
         # Can observe only if we have sufficient data and all of the parameters
         # are within their defined safe limits
-        safe = sufficient_data
+        safe = data_status != ParameterStatus.Unsafe
         if measurements_in_window_count > 0:
             for param in self._parameters:
-                param_key = self._daemon_name+'_'+param.name
-                param_safe, param_value = param.aggregate(measurements_in_window)
+                param_key = self.daemon_name+'_'+param.name
+                param_status, param_value = param.aggregate(measurements_in_window)
                 data.update({param_key: param_value})
-                safe = safe and param_safe
+                safe = safe and param_status != ParameterStatus.Unsafe
 
             measurement_start = measurements_in_window[0]['date']
             measurement_end = measurements_in_window[-1]['date']
 
             data.update({
-                self._daemon_name+'_measurement_start':
+                self.daemon_name+'_measurement_start':
                     measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                self._daemon_name+'_measurement_end':
+                self.daemon_name+'_measurement_end':
                     measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
             })
 
         return (safe, data)
+
+    def disable_parameter(self, parameter, disabled):
+        """Disable or re-enable a named parameter.
+           If parameter is None, then acts on all parameters"""
+
+        success = False
+        for param in self._parameters:
+            if parameter is None or param.name == parameter:
+                param.disable(disabled)
+                success = True
+        return success
+
+    def list_parameters(self):
+        """Return a list of parameter names"""
+        return [param.name for param in self._parameters]
 
     def clear_history(self):
         """Clear the cached measurements"""
@@ -376,6 +416,27 @@ class EnvironmentDaemon:
 
         ret.update({'can_observe': can_observe})
         return ret
+
+    def disable_parameter(self, watcher_name, parameter_name, disabled):
+        """Disable or re-enable safety checking of a given parameter"""
+        for watcher in self._watchers:
+            if watcher.daemon_name == watcher_name:
+                success = watcher.disable_parameter(parameter_name, disabled)
+                return DisableParameterStatus.Success if success \
+                    else DisableParameterStatus.InvalidParameter
+
+        return DisableParameterStatus.InvalidWatcher
+
+    def list_watchers(self):
+        """Return a list of watcher names"""
+        return [watcher.daemon_name for watcher in self._watchers]
+
+    def list_watcher_parameters(self, watcher_name):
+        """Return a list of parameter names for a given watcher"""
+        for watcher in self._watchers:
+            if watcher.daemon_name == watcher_name:
+                return watcher.list_parameters()
+        return []
 
     def clear_history(self):
         """Clear the cached measurements"""
