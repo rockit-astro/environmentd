@@ -4,19 +4,19 @@ _environment()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="status json enable disable"
+    opts="status json restore override"
 
     case "${prev}" in
-        enable)
+        restore)
             # Fall through (bash >= 4 syntax)
             ;&
-        disable)
+        override)
             local watchers=$(environment list-watchers)
             COMPREPLY=($(compgen -W "${watchers}" -- ${cur}))
             return 0
             ;;
         *)
-            local params=$(environment list-parameters ${prev})
+            local params=$(environment list-limited-parameters ${prev})
             if [ -n "${params}" ]; then
                 COMPREPLY=($(compgen -W "${params}" -- ${cur}))
                 return 0

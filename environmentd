@@ -122,9 +122,25 @@ class AggregateParameter:
         self._valid_set_values = valid_set_values
         self._measurement_name = measurement_name if measurement_name is not None else name
 
-    def disable(self, disabled):
-        """Manually disable parameter for safety checks"""
+    def has_limits(self):
+        """Returns true if this parameter has limits that can be disabled"""
+        if self._behaviour == AggregateBehaviour.Set:
+            return self._valid_set_values is not None
+
+        return self._behaviour in [
+            AggregateBehaviour.RangeWithLimits,
+            AggregateBehaviour.MedianWithLimits,
+            AggregateBehaviour.LatestWithLimits
+        ]
+
+    def override_limit(self, disabled):
+        """Manually disable limit checks for this parameter.
+           Returns false if this parameter does not have limits"""
+        if not self.has_limits():
+            return False
+
         self.disabled = disabled
+        return True
 
     def aggregate(self, measurements):
         """Aggregate measurement data"""
@@ -363,20 +379,20 @@ class PyroWatcher:
 
         return (safe, data)
 
-    def disable_parameter(self, parameter, disabled):
-        """Disable or re-enable a named parameter.
-           If parameter is None, then acts on all parameters"""
+    def override_limits(self, parameter, disabled):
+        """Disable or re-enable limit checks on a named parameter.
+           If parameter is None, then acts on all parameters on this watcher"""
 
         success = False
         for param in self._parameters:
-            if parameter is None or param.name == parameter:
-                param.disable(disabled)
+            if (parameter is None or param.name == parameter) and param.has_limits():
+                param.override_limit(disabled)
                 success = True
         return success
 
-    def list_parameters(self):
-        """Return a list of parameter names"""
-        return [param.name for param in self._parameters]
+    def parameters_with_limits(self):
+        """Return a list of the parameter names that have limits"""
+        return [param.name for param in self._parameters if param.has_limits()]
 
     def clear_history(self):
         """Clear the cached measurements"""
@@ -417,11 +433,11 @@ class EnvironmentDaemon:
         ret.update({'can_observe': can_observe})
         return ret
 
-    def disable_parameter(self, watcher_name, parameter_name, disabled):
+    def override_parameter_limits(self, watcher_name, parameter_name, disabled):
         """Disable or re-enable safety checking of a given parameter"""
         for watcher in self._watchers:
             if watcher.daemon_name == watcher_name:
-                success = watcher.disable_parameter(parameter_name, disabled)
+                success = watcher.override_limits(parameter_name, disabled)
                 return DisableParameterStatus.Success if success \
                     else DisableParameterStatus.InvalidParameter
 
@@ -431,11 +447,11 @@ class EnvironmentDaemon:
         """Return a list of watcher names"""
         return [watcher.daemon_name for watcher in self._watchers]
 
-    def list_watcher_parameters(self, watcher_name):
-        """Return a list of parameter names for a given watcher"""
+    def list_limited_parameters(self, watcher_name):
+        """Return a list of parameter names with limits for a given watcher"""
         for watcher in self._watchers:
             if watcher.daemon_name == watcher_name:
-                return watcher.list_parameters()
+                return watcher.parameters_with_limits()
         return []
 
     def clear_history(self):
