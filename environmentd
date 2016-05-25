@@ -346,7 +346,7 @@ class PyroWatcher:
 
                 # Do not allow gaps within the measurement window
                 if data_status == ParameterStatus.Safe and last_date is not None and \
-                        last_date - date > self._max_data_gap:
+                        date - last_date > self._max_data_gap:
                     data_status = ParameterStatus.Unsafe
 
             last_date = date
