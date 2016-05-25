@@ -42,11 +42,11 @@ PYRO_COMM_TIMEOUT = 5
 # Settings for low-level daemons
 VAISALA_HOST = '192.168.0.102'
 VAISALA_PORT = 9001
-VAISALA_NAME = 'vaisala_daemon'
+VAISALA_NAME = 'onemetre_vaisala_daemon'
 
 ROOMALERT_HOST = '192.168.0.102'
 ROOMALERT_PORT = 9008
-ROOMALERT_NAME = 'roomalert_daemon'
+ROOMALERT_NAME = 'onemetre_roomalert_daemon'
 
 SUPERWASP_HOST = '192.168.0.102'
 SUPERWASP_PORT = 9007
@@ -58,15 +58,15 @@ TNG_NAME = 'tng_daemon'
 
 DISKSPACE_HOST = '192.168.0.101'
 DISKSPACE_PORT = 9008
-DISKSPACE_NAME = 'diskspace_daemon'
+DISKSPACE_NAME = 'onemetre_diskspace_daemon'
 
 NETPING_HOST = '192.168.0.102'
 NETPING_PORT = 9012
-NETPING_NAME = 'netping_daemon'
+NETPING_NAME = 'onemetre_netping_daemon'
 
 POWER_HOST = '192.168.0.102'
 POWER_PORT = 9009
-POWER_NAME = 'power_daemon'
+POWER_NAME = 'onemetre_power_daemon'
 
 VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
 ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
