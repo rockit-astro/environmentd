@@ -296,6 +296,7 @@ POWER_PARAMETERS = [
     AggregateParameter('dome_ups_battery_healthy', AggregateBehaviour.Set),
     AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.RangeWithLimits,
                        limits=(85, 101)),
+    AggregateParameter('light', AggregateBehaviour.Set),
 ]
 
 class PyroWatcher:
