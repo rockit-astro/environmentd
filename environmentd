@@ -203,8 +203,40 @@ class AggregateParameter:
 
         return (status, (value, status))
 
-# Safe operating ranges. Dome will be closed if these parameters aren't met
+    def dashboard_aggregate(self, measurements):
+        """Status data for the web dashboard"""
+        ret = {'disabled': self.disabled}
+        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
+                self._behaviour == AggregateBehaviour.MedianWithLimits or \
+                self._behaviour == AggregateBehaviour.LatestWithLimits:
+            ret['limits'] = self._limits
 
+        if len(measurements) == 0:
+            ret['error'] = 'NO DATA'
+            return ret
+
+        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
+                self._behaviour == AggregateBehaviour.Range:
+
+            low = measurements[0][self._measurement_name]
+            high = low
+            for measurement in measurements:
+                value = measurement[self._measurement_name]
+                low = min(value, low)
+                high = max(value, high)
+
+            ret['max'] = high
+            ret['min'] = low
+            ret['latest'] = measurements[-1][self._measurement_name]
+        if self._behaviour == AggregateBehaviour.MedianWithLimits or \
+                self._behaviour == AggregateBehaviour.Median:
+
+            ret['latest'] = statistics.median([m[self._measurement_name] for m in measurements])
+        else:
+            ret['latest'] = measurements[-1][self._measurement_name]
+        return ret
+
+# Safe operating ranges. Dome will be closed if these parameters aren't met
 VAISALA_PARAMETERS = [
     AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 40)),
     AggregateParameter('wind_speed_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
@@ -379,6 +411,30 @@ class PyroWatcher:
 
         return (safe, data)
 
+    def dashboard_status(self):
+        """Queries the aggregate status of the monitored daemon.
+           Returns data to be displayed in the web dashboard"""
+        # self._data is assumed to be chronologically ordered
+        window_start = datetime.datetime.utcnow() - self._window_length
+
+        measurements_in_window = []
+
+        # Filter data for the measurements in our desired time window
+        for measurement in self._data:
+            date = measurement['date']
+
+            # Only include measurements within the desired window
+            if date >= window_start:
+                measurements_in_window.append(measurement)
+
+        data = {}
+        for param in self._parameters:
+            param_key = self.daemon_name+'_'+param.name
+            param_value = param.dashboard_aggregate(measurements_in_window)
+            data.update({param_key: param_value})
+
+        return data
+
     def override_limits(self, parameter, disabled):
         """Disable or re-enable limit checks on a named parameter.
            If parameter is None, then acts on all parameters on this watcher"""
@@ -432,6 +488,14 @@ class EnvironmentDaemon:
             ret.update(data)
 
         ret.update({'can_observe': can_observe})
+        return ret
+
+    @Pyro4.expose
+    def dashboard_status(self):
+        """Returns the aggregated dashboard status of the monitored daemons."""
+        ret = {}
+        for watcher in self._watchers:
+            ret.update(watcher.dashboard_status())
         return ret
 
     @Pyro4.expose
