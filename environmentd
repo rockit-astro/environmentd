@@ -32,6 +32,7 @@ import statistics
 import threading
 import time
 import Pyro4
+import warwick.observatory as observatory
 
 # Settings for this daemon
 PYRO_HOST = '192.168.0.102'
@@ -341,10 +342,12 @@ class PyroWatcher:
                 else:
                     print('{} WARNING: recieved empty data from {}' \
                         .format(now(), self.daemon_name))
+                    observatory.log.error('environmentd', 'Recieved empty data from ' + self.daemon_name)
             except Exception as exception:
                 print('{} ERROR: failed to query from {}: {}' \
                       .format(now(), self.daemon_name, str(exception)))
-
+                observatory.log.error('environmentd', 'Failed to query ' + self.daemon_name + \
+                                      ' (' + str(exception) + ')')
             time.sleep(self._query_delay)
 
     def status(self):
@@ -505,8 +508,13 @@ class EnvironmentDaemon:
         for watcher in self._watchers:
             if watcher.daemon_name == watcher_name:
                 success = watcher.override_limits(parameter_name, disabled)
-                return DisableParameterStatus.Success if success \
-                    else DisableParameterStatus.InvalidParameter
+                if success:
+                    message = 'Disabled' if disabled else 'Restored'
+                    message += ' limit checks on ' + watcher_name
+                    message += ' (all sensors)' if parameter_name is None else ' ' + parameter_name
+                    observatory.log.info('environmentd', message)
+                    return DisableParameterStatus.Success
+                return DisableParameterStatus.InvalidParameter
 
         return DisableParameterStatus.InvalidWatcher
 
