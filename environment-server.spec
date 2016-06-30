@@ -26,7 +26,6 @@ mkdir -p %{buildroot}%{_unitdir}
 
 %post
 %service_add_post environmentd.service
-%fillup_and_insserv -f -y environmentd.service
 
 %preun
 %stop_on_removal environmentd.service
