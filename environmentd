@@ -342,7 +342,8 @@ class PyroWatcher:
                 else:
                     print('{} WARNING: recieved empty data from {}' \
                         .format(now(), self.daemon_name))
-                    observatory.log.error('environmentd', 'Recieved empty data from ' + self.daemon_name)
+                    observatory.log.error('environmentd', 'Failed to query' + self.daemon_name \
+                                          + ' (received empty response)')
             except Exception as exception:
                 print('{} ERROR: failed to query from {}: {}' \
                       .format(now(), self.daemon_name, str(exception)))
