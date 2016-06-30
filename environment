@@ -20,19 +20,15 @@
 # pylint: disable=too-many-statements
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
+# pylint: disable=too-few-public-methods
 
 import datetime
 import json
 import os
 import sys
 import Pyro4
+import warwick.observatory as observatory
 
-PYRO_HOST = '192.168.0.102'
-PYRO_PORT = 9002
-PYRO_NAME = 'environment_daemon'
-PYRO_COMM_TIMEOUT = 5
-
-PYRO_URI = 'PYRO:' + PYRO_NAME + '@' + PYRO_HOST + ':' + str(PYRO_PORT)
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
 
@@ -76,7 +72,7 @@ def print_status():
     status = None
 
     try:
-        with Pyro4.Proxy(PYRO_URI) as environment:
+        with observatory.daemons.onemetre_environment.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -186,7 +182,7 @@ def print_json():
     """Prints the latest environment data in machine-readable form"""
     status = None
     try:
-        with Pyro4.Proxy(PYRO_URI) as environment:
+        with observatory.daemons.onemetre_environment.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -265,7 +261,7 @@ def override_parameter_limits(disable, args):
         watcher = args[0]
         parameter = args[1] if arg_count == 2 else None
         try:
-            with Pyro4.Proxy(PYRO_URI) as environment:
+            with observatory.daemons.onemetre_environment.connect() as environment:
                 ret = environment.override_parameter_limits(watcher, parameter, disable)
                 if ret == DisableParameterStatus.Success:
                     return 0
@@ -288,7 +284,7 @@ def override_parameter_limits(disable, args):
 def list_watchers():
     """Print a list of watcher names (for use by bash completions)"""
     try:
-        with Pyro4.Proxy(PYRO_URI) as environment:
+        with observatory.daemons.onemetre_environment.connect() as environment:
             names = environment.list_watchers()
             print(' '.join(names))
             return 0
@@ -303,7 +299,7 @@ def list_limited_parameters(args):
         return 1
 
     try:
-        with Pyro4.Proxy(PYRO_URI) as environment:
+        with observatory.daemons.onemetre_environment.connect() as environment:
             names = environment.list_limited_parameters(args[0])
             print(' '.join(names))
             return 0
@@ -329,7 +325,6 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         sys.exit(print_usage(SCRIPT_NAME))
 
-    Pyro4.config.COMMTIMEOUT = PYRO_COMM_TIMEOUT
     if sys.argv[1] == 'status':
         sys.exit(print_status())
     elif sys.argv[1] == 'json':

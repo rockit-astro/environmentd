@@ -1,5 +1,5 @@
 Name:      onemetre-environment-server
-Version:   1.18
+Version:   1.19
 Release:   1
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick one-metre telescope.

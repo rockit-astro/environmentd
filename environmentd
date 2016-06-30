@@ -34,49 +34,6 @@ import time
 import Pyro4
 import warwick.observatory as observatory
 
-# Settings for this daemon
-PYRO_HOST = '192.168.0.102'
-PYRO_PORT = 9002
-PYRO_NAME = 'environment_daemon'
-PYRO_COMM_TIMEOUT = 5
-
-# Settings for low-level daemons
-VAISALA_HOST = '192.168.0.102'
-VAISALA_PORT = 9001
-VAISALA_NAME = 'onemetre_vaisala_daemon'
-
-ROOMALERT_HOST = '192.168.0.102'
-ROOMALERT_PORT = 9008
-ROOMALERT_NAME = 'onemetre_roomalert_daemon'
-
-SUPERWASP_HOST = '192.168.0.102'
-SUPERWASP_PORT = 9007
-SUPERWASP_NAME = 'superwasp_daemon'
-
-TNG_HOST = '192.168.0.102'
-TNG_PORT = 9011
-TNG_NAME = 'tng_daemon'
-
-DISKSPACE_HOST = '192.168.0.101'
-DISKSPACE_PORT = 9008
-DISKSPACE_NAME = 'onemetre_diskspace_daemon'
-
-NETPING_HOST = '192.168.0.102'
-NETPING_PORT = 9012
-NETPING_NAME = 'onemetre_netping_daemon'
-
-POWER_HOST = '192.168.0.102'
-POWER_PORT = 9009
-POWER_NAME = 'onemetre_power_daemon'
-
-VAISALA_URI = 'PYRO:' + VAISALA_NAME + '@' + VAISALA_HOST + ':' + str(VAISALA_PORT)
-ROOMALERT_URI = 'PYRO:' + ROOMALERT_NAME + '@' + ROOMALERT_HOST + ':' + str(ROOMALERT_PORT)
-SUPERWASP_URI = 'PYRO:' + SUPERWASP_NAME + '@' + SUPERWASP_HOST + ':' + str(SUPERWASP_PORT)
-TNG_URI = 'PYRO:' + TNG_NAME + '@' + TNG_HOST + ':' + str(TNG_PORT)
-DISKSPACE_URI = 'PYRO:' + DISKSPACE_NAME + '@' + DISKSPACE_HOST + ':' + str(DISKSPACE_PORT)
-NETPING_URI = 'PYRO:' + NETPING_NAME + '@' + NETPING_HOST + ':' + str(NETPING_PORT)
-POWER_URI = 'PYRO:' + POWER_NAME + '@' + POWER_HOST + ':' + str(POWER_PORT)
-
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
 # to the initial startup, while we wait to build sufficient history.
@@ -302,10 +259,9 @@ POWER_PARAMETERS = [
 
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, pyro_uri, query_delay, max_data_gap, window_length,
-                 parameters):
+    def __init__(self, daemon_name, daemon, query_delay, max_data_gap, window_length, parameters):
         self.daemon_name = daemon_name
-        self._pyro_uri = pyro_uri
+        self._daemon = daemon
         self._query_delay = query_delay
         self._max_data_gap = max_data_gap
         self._window_length = window_length
@@ -328,8 +284,8 @@ class PyroWatcher:
             try:
                 # The delay between queries is greater than the comm timeout
                 # so there is no point caching the proxy between loops
-                daemon = Pyro4.Proxy(self._pyro_uri)
-                data = daemon.last_measurement()
+                with self._daemon.connect() as daemon:
+                    data = daemon.last_measurement()
 
                 if data is not None:
                     # Pryo doesn't deserialize dates, so we manually manage this.
@@ -464,20 +420,21 @@ class EnvironmentDaemon:
 
     def __init__(self):
         self._watchers = [
-            PyroWatcher('vaisala', VAISALA_URI, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
-                        CONDITION_WINDOW_LENGTH, VAISALA_PARAMETERS),
-            PyroWatcher('roomalert', ROOMALERT_URI, ROOMALERT_QUERY_DELAY, TIME_GAP_MAX,
-                        CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
-            PyroWatcher('superwasp', SUPERWASP_URI, SUPERWASP_QUERY_DELAY, TIME_GAP_MAX,
-                        CONDITION_WINDOW_LENGTH, SUPERWASP_PARAMETERS),
-            PyroWatcher('tng', TNG_URI, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
+            PyroWatcher('vaisala', observatory.daemons.onemetre_vaisala, VAISALA_QUERY_DELAY,
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, VAISALA_PARAMETERS),
+            PyroWatcher('roomalert', observatory.daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
+            PyroWatcher('superwasp', observatory.daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, SUPERWASP_PARAMETERS),
+            PyroWatcher('tng', observatory.daemons.tng_log, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
                         CONDITION_WINDOW_LENGTH, TNG_PARAMETERS),
-            PyroWatcher('diskspace', DISKSPACE_URI, DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
+            PyroWatcher('diskspace', observatory.daemons.onemetre_tcs_diskspace,
+                        DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
                         DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
-            PyroWatcher('netping', NETPING_URI, NETPING_QUERY_DELAY, NETPING_TIME_GAP_MAX,
-                        CONDITION_WINDOW_LENGTH, NETPING_PARAMETERS),
-            PyroWatcher('power', POWER_URI, POWER_QUERY_DELAY, TIME_GAP_MAX,
-                        CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
+            PyroWatcher('netping', observatory.daemons.onemetre_network_ping, NETPING_QUERY_DELAY,
+                        NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, NETPING_PARAMETERS),
+            PyroWatcher('power', observatory.daemons.onemetre_power, POWER_QUERY_DELAY,
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
         ]
 
     @Pyro4.expose
@@ -540,21 +497,5 @@ class EnvironmentDaemon:
         for watcher in self._watchers:
             watcher.clear_history()
 
-def spawn_daemon():
-    """Spawns the daemon and registers it with Pyro"""
-    Pyro4.config.COMMTIMEOUT = PYRO_COMM_TIMEOUT
-    Pyro4.config.DETAILED_TRACEBACK = True
-    Pyro4.config.REQUIRE_EXPOSE = True
-    pyro = Pyro4.Daemon(host=PYRO_HOST, port=PYRO_PORT)
-
-    environment = EnvironmentDaemon()
-    uri = pyro.register(environment, objectId=PYRO_NAME)
-
-    print('{} MESSAGE: Starting environment daemon with Pyro ID: {}' \
-        .format(datetime.datetime.utcnow(), uri))
-    pyro.requestLoop()
-    print('{} MESSAGE: Stopping environment daemon with Pyro ID: {}' \
-        .format(datetime.datetime.utcnow(), uri))
-
 if __name__ == '__main__':
-    spawn_daemon()
+    observatory.daemons.onemetre_environment.launch(EnvironmentDaemon())
