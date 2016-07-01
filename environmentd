@@ -312,16 +312,14 @@ class PyroWatcher:
            Returns a tuple of observability and data"""
 
         # We only trust the measurement data if
-        #   (a) we have at least one measurement before the start of the defined window
-        #   (b) the last measurement is no older than _max_data_gap
-        #   (c) the gaps between successive measurements is no greater than _max_data_gap
-        #       (checked in loop below)
+        #   (a) the last measurement is no older than _max_data_gap
+        #   (b) all measurements within the defined window are safe
         # self._data is assumed to be chronologically ordered
         window_start = datetime.datetime.utcnow() - self._window_length
 
         all_disabled = all(param.disabled for param in self._parameters)
         data_status = ParameterStatus.Disabled if all_disabled else ParameterStatus.Unsafe
-        if not all_disabled and len(self._data) > 0 and self._data[0]['date'] < window_start and \
+        if not all_disabled and len(self._data) > 0 and \
                 self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow():
             data_status = ParameterStatus.Safe
 
@@ -336,11 +334,6 @@ class PyroWatcher:
             # Only include measurements within the desired window
             if date >= window_start:
                 measurements_in_window.append(measurement)
-
-                # Do not allow gaps within the measurement window
-                if data_status == ParameterStatus.Safe and last_date is not None and \
-                        date - last_date > self._max_data_gap:
-                    data_status = ParameterStatus.Unsafe
 
             last_date = date
 
