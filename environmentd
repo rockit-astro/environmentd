@@ -326,20 +326,8 @@ class PyroWatcher:
                 self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow():
             data_status = ParameterStatus.Safe
 
-        measurements_in_window = []
-        date = None
-        last_date = None
-
-        # Filter data for the measurements in our desired time window
-        for measurement in self._data:
-            date = measurement['date']
-
-            # Only include measurements within the desired window
-            if date >= window_start:
-                measurements_in_window.append(measurement)
-
-            last_date = date
-
+        # Only include measurements within the desired window
+        measurements_in_window = [m for m in self._data if m['date'] >= window_start]
         measurements_in_window_count = len(measurements_in_window)
         data = {
             self.daemon_name+'_data_status': data_status,
