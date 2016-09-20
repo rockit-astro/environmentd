@@ -210,6 +210,7 @@ VAISALA_PARAMETERS = [
     AggregateParameter('accumulated_rain', AggregateBehaviour.RangeWithLimits, limits=(0, 0)),
     AggregateParameter('accumulated_rain_valid', AggregateBehaviour.Set,
                        valid_set_values=set([True])),
+    AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
 ]
 
 ROOMALERT_PARAMETERS = [
@@ -221,16 +222,18 @@ ROOMALERT_PARAMETERS = [
     AggregateParameter('truss_temp', AggregateBehaviour.Range),
     AggregateParameter('hatch_closed', AggregateBehaviour.Set),
     AggregateParameter('trap_closed', AggregateBehaviour.Set),
+    AggregateParameter('security_system_safe', AggregateBehaviour.Set,
+                       valid_set_values=set([True])),
 ]
 
 SUPERWASP_PARAMETERS = [
-    AggregateParameter('sky_temp', AggregateBehaviour.RangeWithLimits, limits=(-100, -30)),
-    AggregateParameter('ext_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
-    AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+    AggregateParameter('sky_temp', AggregateBehaviour.Range),
+    AggregateParameter('ext_humidity', AggregateBehaviour.Range, limits=(0, 75)),
+    AggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
 ]
 
 TNG_PARAMETERS = [
-    AggregateParameter('dust', AggregateBehaviour.RangeWithLimits, limits=(0, 50))
+    AggregateParameter('dust', AggregateBehaviour.Range)
 ]
 
 DISKSPACE_PARAMETERS = [
