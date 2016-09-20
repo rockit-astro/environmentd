@@ -133,7 +133,7 @@ def print_status():
         print()
 
         if status['superwasp_queue_len'] > 0:
-            print('SuperWASP data from ' + format_date(status, 'superwasp'))
+            print('SuperWASP data from ' + format_date(status, 'superwasp', color=False))
             print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH',
                                                        color=False))
             print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C',
@@ -141,15 +141,15 @@ def print_status():
             print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
                                                        '\u00B0C', fmt='.2f', color=False))
         else:
-            print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
+            print(FMT_YELLOW + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
 
         if status['tng_queue_len'] > 0:
-            print('TNG data from ' + format_date(status, 'tng'))
+            print('TNG data from ' + format_date(status, 'tng', color=False))
             print('       Dust Conc.: ' + format_range(status['tng_dust'], ' ug/m\u00B3',
                                                        color=False))
         else:
-            print(FMT_RED + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
+            print(FMT_YELLOW + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
         print()
 
         if status['power_queue_len'] > 0:
@@ -195,12 +195,12 @@ def print_json():
 
     return 0
 
-def format_date(data, group):
+def format_date(data, group, color=True):
     """Builds a formatted date string for the named data group"""
     start = datetime.datetime.strptime(data[group + '_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
     end = datetime.datetime.strptime(data[group + '_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
     data = (start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'), data[group + '_data_status'])
-    return format_range(data, ':', fmt='')
+    return format_range(data, ':', fmt='', color=color)
 
 def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
     """Builds a formatted string with a value range"""

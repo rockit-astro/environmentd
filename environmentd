@@ -320,10 +320,11 @@ class PyroWatcher:
         # self._data is assumed to be chronologically ordered
         window_start = datetime.datetime.utcnow() - self._window_length
 
-        all_disabled = all(param.disabled for param in self._parameters)
-        data_status = ParameterStatus.Disabled if all_disabled else ParameterStatus.Unsafe
-        if not all_disabled and len(self._data) > 0 and \
-                self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow():
+        data_status = ParameterStatus.Unsafe
+        if all(param.disabled for param in self._parameters):
+            data_status = ParameterStatus.Disabled
+        elif all(not param.has_limits() for param in self._parameters) or (len(self._data) > 0 \
+            and self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow()):
             data_status = ParameterStatus.Safe
 
         # Only include measurements within the desired window
