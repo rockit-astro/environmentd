@@ -134,17 +134,20 @@ def print_status():
 
         if status['superwasp_queue_len'] > 0:
             print('SuperWASP data from ' + format_date(status, 'superwasp'))
-            print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH'))
-            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C'))
+            print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH',
+                                                       color=False))
+            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C',
+                                                       color=False))
             print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
-                                                       '\u00B0C', fmt='.2f'))
+                                                       '\u00B0C', fmt='.2f', color=False))
         else:
             print(FMT_RED + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
 
         if status['tng_queue_len'] > 0:
             print('TNG data from ' + format_date(status, 'tng'))
-            print('       Dust Conc.: ' + format_range(status['tng_dust'], ' ug/m\u00B3'))
+            print('       Dust Conc.: ' + format_range(status['tng_dust'], ' ug/m\u00B3',
+                                                       color=False))
         else:
             print(FMT_RED + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
         print()
