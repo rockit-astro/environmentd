@@ -211,6 +211,8 @@ VAISALA_PARAMETERS = [
     AggregateParameter('accumulated_rain_valid', AggregateBehaviour.Set,
                        valid_set_values=set([True])),
     AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
+    AggregateParameter('dew_point_delta_valid', AggregateBehaviour.Set,
+                       valid_set_values=set([True])),
 ]
 
 ROOMALERT_PARAMETERS = [
