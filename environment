@@ -107,6 +107,10 @@ def print_status():
             print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
                                                        ' %RH', valid=humidity_valid))
 
+            dewptd_valid = False not in status['vaisala_dew_point_delta_valid']
+            print('  Temp. > Dew Pt.: ' + format_range(status['vaisala_dew_point_delta'],
+                                                       '\u00B0C', fmt='.2f', valid=dewptd_valid))
+
             accumulated_rain_valid = False not in status['vaisala_accumulated_rain_valid']
             print('Accumulated Rain.: ' + format_range(status['vaisala_accumulated_rain'], ' mm',
                                                        fmt='.2f', valid=accumulated_rain_valid))
