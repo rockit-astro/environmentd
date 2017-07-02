@@ -132,6 +132,7 @@ def print_status():
                                                        ' %RH', color=False))
             print('       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
             print('        Trap Door: ' + format_open_closed(status['roomalert_trap_closed']))
+            print(' Tel. Sec. System: ' + format_safe_tripped(status['roomalert_security_system_safe']))
         else:
             print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
         print()
@@ -245,6 +246,17 @@ def format_open_closed(data):
             string += ", "
         string += "CLOSED"
     return FMT_BOLD + string + FMT_CLEAR
+
+def format_safe_tripped(data):
+    """Builds a formatted string with SAFE or TRIPPED"""
+    string = ""
+    if False in data:
+        string += FMT_BOLD + FMT_RED + "TRIPPED" + FMT_CLEAR
+    if True in data:
+        if len(string) > 0:
+            string += ", "
+        string += FMT_BOLD + FMT_GREEN + "SAFE" + FMT_CLEAR
+    return string
 
 def format_ups(data, prefix):
     """Builds a formatted string for a UPS status"""
