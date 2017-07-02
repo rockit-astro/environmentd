@@ -418,7 +418,7 @@ class EnvironmentDaemon:
             PyroWatcher('diskspace', observatory.daemons.onemetre_tcs_diskspace,
                         DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
                         DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
-            PyroWatcher('netping', observatory.daemons.onemetre_network_ping, NETPING_QUERY_DELAY,
+            PyroWatcher('netping', observatory.daemons.observatory_network_ping, NETPING_QUERY_DELAY,
                         NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, NETPING_PARAMETERS),
             PyroWatcher('power', observatory.daemons.onemetre_power, POWER_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
