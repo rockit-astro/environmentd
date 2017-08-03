@@ -273,6 +273,7 @@ class PyroWatcher:
         self._max_data_gap = max_data_gap
         self._window_length = window_length
         self._parameters = parameters
+        self._last_query_failed = False
 
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
@@ -302,16 +303,26 @@ class PyroWatcher:
                         .format(now(), self.daemon_name, data['date']))
 
                     self._data.append(data)
+
+                    if self._last_query_failed:
+                        observatory.log.info('environmentd', 'Restored contact with ' \
+                                             + self.daemon_name)
+                    self._last_query_failed = False
                 else:
                     print('{} WARNING: recieved empty data from {}' \
                         .format(now(), self.daemon_name))
-                    observatory.log.error('environmentd', 'Failed to query ' + self.daemon_name \
-                                          + ' (received empty response)')
+                    if not self._last_query_failed:
+                        observatory.log.error('environmentd', 'Lost contact with ' \
+                                              + self.daemon_name + ' (received empty response)')
+                    self._last_query_failed = True
             except Exception as exception:
                 print('{} ERROR: failed to query from {}: {}' \
                       .format(now(), self.daemon_name, str(exception)))
-                observatory.log.error('environmentd', 'Failed to query ' + self.daemon_name + \
-                                      ' (' + str(exception) + ')')
+                if not self._last_query_failed:
+                    observatory.log.error('environmentd', 'Lost contact with ' + self.daemon_name \
+                                          + ' (' + str(exception) + ')')
+
+                self._last_query_failed = True
             time.sleep(self._query_delay)
 
     def status(self):
