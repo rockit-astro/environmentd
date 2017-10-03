@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# This file is part of environmentd.
+# This file is part of environmentd
 #
 # environmentd is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,14 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with environmentd.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.core import setup
+"""environmentd common code"""
 
-setup(name='warwick.w1m.environment',
-      version='0',
-      packages = ['warwick.w1m.environment'],
-      author='Paul Chote',
-      description='Common code for the W1m environment daemon',
-      license='GNU GPLv3',
-      author_email='p.chote@warwick.ac.uk',
-      url="https://github.com/warwick-one-metre/environmentd",
-)
+from .pyro_watcher import PyroWatcher
+from .aggregate_parameter import AggregateParameter, AggregateBehaviour
+from .constants import ParameterStatus, DisableParameterStatus

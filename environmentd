@@ -24,15 +24,21 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-return-statements
+# pylint: disable=too-many-instance-attributes
 
-from collections import deque
 import datetime
-import math
-import statistics
-import threading
-import time
+import sys
 import Pyro4
-import warwick.observatory as observatory
+from warwick.observatory.common import daemons, log
+from warwick.w1m.environment import (
+    PyroWatcher,
+    AggregateParameter,
+    AggregateBehaviour,
+    ParameterStatus,
+    DisableParameterStatus)
+
+# Include more detailed exceptions
+sys.excepthook = Pyro4.util.excepthook
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -57,142 +63,6 @@ TNG_QUERY_DELAY = 300
 POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 30
 NETPING_QUERY_DELAY = 30
-
-class DisableParameterStatus:
-    """Return codes for ResetParameterStatus"""
-    Success, InvalidWatcher, InvalidParameter = range(3)
-
-class ParameterStatus:
-    """Status of a measurement parameter"""
-    Unsafe, Safe, Disabled = range(3)
-
-class AggregateBehaviour:
-    """Aggregation behaviour"""
-    RangeWithLimits, Range, MedianWithLimits, Median, LatestWithLimits, Latest, Set = range(7)
-
-class AggregateParameter:
-    """Defines the aggregation behaviour for a specific environment parameter"""
-    def __init__(self, name, behaviour, limits=None, valid_set_values=None, measurement_name=None):
-        self.name = name
-        self.disabled = False
-        self._behaviour = behaviour
-        self._limits = limits
-        self._valid_set_values = valid_set_values
-        self._measurement_name = measurement_name if measurement_name is not None else name
-
-    def has_limits(self):
-        """Returns true if this parameter has limits that can be disabled"""
-        if self._behaviour == AggregateBehaviour.Set:
-            return self._valid_set_values is not None
-
-        return self._behaviour in [
-            AggregateBehaviour.RangeWithLimits,
-            AggregateBehaviour.MedianWithLimits,
-            AggregateBehaviour.LatestWithLimits
-        ]
-
-    def override_limit(self, disabled):
-        """Manually disable limit checks for this parameter.
-           Returns false if this parameter does not have limits"""
-        if not self.has_limits():
-            return False
-
-        self.disabled = disabled
-        return True
-
-    def aggregate(self, measurements):
-        """Aggregate measurement data"""
-        status = ParameterStatus.Disabled if self.disabled else ParameterStatus.Unsafe
-        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
-                self._behaviour == AggregateBehaviour.Range:
-
-            if len(measurements) == 0:
-                return (status, (0, 0, status))
-
-            low = measurements[0][self._measurement_name]
-            high = low
-            for measurement in measurements:
-                value = measurement[self._measurement_name]
-                low = min(value, low)
-                high = max(value, high)
-
-            if not self.disabled and (self._behaviour == AggregateBehaviour.Range or \
-                    (low >= self._limits[0] and high <= self._limits[1])):
-                status = ParameterStatus.Safe
-
-            return (status, (low, high, status))
-        if self._behaviour == AggregateBehaviour.MedianWithLimits or \
-                self._behaviour == AggregateBehaviour.Median:
-
-            if len(measurements) == 0:
-                return (status, (0, status))
-
-            median = statistics.median([m[self._measurement_name] for m in measurements])
-            if not self.disabled and (self._behaviour == AggregateBehaviour.Median or \
-                    (median >= self._limits[0] and median <= self._limits[1])):
-                status = ParameterStatus.Safe
-
-            return (status, (median, status))
-        elif self._behaviour == AggregateBehaviour.Set:
-            ret = set()
-            for measurement in measurements:
-                ret.add(measurement[self._measurement_name])
-
-            if not self.disabled and (self._valid_set_values is None or \
-                    len(ret - self._valid_set_values) == 0):
-                status = ParameterStatus.Safe
-
-            # set can't be serialized to JSON, so convert to list now
-            return (status, list(ret))
-        else:
-            if len(measurements) == 0:
-                return (status, (0, status))
-
-            date = measurements[0]['date']
-            value = measurements[0][self._measurement_name]
-            for measurement in measurements:
-                if measurement['date'] > date:
-                    date = measurement['date']
-                    value = measurement[self._measurement_name]
-
-        if not self.disabled and (self._behaviour == AggregateBehaviour.Latest or \
-                (value >= self._limits[0] and value <= self._limits[1])):
-            status = ParameterStatus.Safe
-
-        return (status, (value, status))
-
-    def dashboard_aggregate(self, measurements):
-        """Status data for the web dashboard"""
-        ret = {'disabled': self.disabled}
-        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
-                self._behaviour == AggregateBehaviour.MedianWithLimits or \
-                self._behaviour == AggregateBehaviour.LatestWithLimits:
-            ret['limits'] = self._limits
-
-        if len(measurements) == 0:
-            ret['error'] = 'NO DATA'
-            return ret
-
-        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
-                self._behaviour == AggregateBehaviour.Range:
-
-            low = measurements[0][self._measurement_name]
-            high = low
-            for measurement in measurements:
-                value = measurement[self._measurement_name]
-                low = min(value, low)
-                high = max(value, high)
-
-            ret['max'] = high
-            ret['min'] = low
-            ret['latest'] = measurements[-1][self._measurement_name]
-        if self._behaviour == AggregateBehaviour.MedianWithLimits or \
-                self._behaviour == AggregateBehaviour.Median:
-
-            ret['latest'] = statistics.median([m[self._measurement_name] for m in measurements])
-        else:
-            ret['latest'] = measurements[-1][self._measurement_name]
-        return ret
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 VAISALA_PARAMETERS = [
@@ -264,201 +134,41 @@ POWER_PARAMETERS = [
     AggregateParameter('light', AggregateBehaviour.Set),
 ]
 
-class PyroWatcher:
-    """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, daemon, query_delay, max_data_gap, window_length, parameters):
-        self.daemon_name = daemon_name
-        self._daemon = daemon
-        self._query_delay = query_delay
-        self._max_data_gap = max_data_gap
-        self._window_length = window_length
-        self._parameters = parameters
-        self._last_query_failed = False
-
-        # Place a hard limit on the number of stored measurements to simplify
-        # cleanup.  Additional filtering is required when iterating the queue.
-        queue_len = window_length.seconds * \
-            1.1 / query_delay
-        self._data = deque(maxlen=math.ceil(queue_len))
-
-        runloop = threading.Thread(target=self.__run_thread)
-        runloop.daemon = True
-        runloop.start()
-
-    def __run_thread(self):
-        """Run loop for monitoring the hardware daemon"""
-        while True:
-            now = datetime.datetime.utcnow
-            try:
-                # The delay between queries is greater than the comm timeout
-                # so there is no point caching the proxy between loops
-                with self._daemon.connect() as daemon:
-                    data = daemon.last_measurement()
-
-                if data is not None:
-                    # Pryo doesn't deserialize dates, so we manually manage this.
-                    data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
-                    if now() - data['date'] > self._max_data_gap:
-                        print('{} WARNING: recieved stale data from {}: {}' \
-                        .format(now(), self.daemon_name, data['date']))
-
-                    self._data.append(data)
-
-                    if self._last_query_failed:
-                        observatory.log.info('environmentd', 'Restored contact with ' \
-                                             + self.daemon_name)
-                    self._last_query_failed = False
-                else:
-                    print('{} WARNING: recieved empty data from {}' \
-                        .format(now(), self.daemon_name))
-                    if not self._last_query_failed:
-                        observatory.log.error('environmentd', 'Lost contact with ' \
-                                              + self.daemon_name + ' (received empty response)')
-                    self._last_query_failed = True
-            except Exception as exception:
-                print('{} ERROR: failed to query from {}: {}' \
-                      .format(now(), self.daemon_name, str(exception)))
-                if not self._last_query_failed:
-                    observatory.log.error('environmentd', 'Lost contact with ' + self.daemon_name \
-                                          + ' (' + str(exception) + ')')
-
-                self._last_query_failed = True
-            time.sleep(self._query_delay)
-
-    def status(self):
-        """Queries the aggregate status of the monitored daemon.
-           Returns a tuple of observability and data"""
-
-        # We only trust the measurement data if
-        #   (a) the last measurement is no older than _max_data_gap
-        #   (b) all measurements within the defined window are safe
-        # self._data is assumed to be chronologically ordered
-        window_start = datetime.datetime.utcnow() - self._window_length
-
-        data_status = ParameterStatus.Unsafe
-        if all(param.disabled for param in self._parameters):
-            data_status = ParameterStatus.Disabled
-        elif all(not param.has_limits() for param in self._parameters) or (len(self._data) > 0 \
-            and self._data[-1]['date'] + self._max_data_gap > datetime.datetime.utcnow()):
-            data_status = ParameterStatus.Safe
-
-        # Only include measurements within the desired window
-        measurements_in_window = [m for m in self._data if m['date'] >= window_start]
-        measurements_in_window_count = len(measurements_in_window)
-        data = {
-            self.daemon_name+'_data_status': data_status,
-            self.daemon_name+'_queue_len': measurements_in_window_count
-        }
-
-        # Can observe only if we have sufficient data and all of the parameters
-        # are within their defined safe limits
-        safe = data_status != ParameterStatus.Unsafe
-        if measurements_in_window_count > 0:
-            for param in self._parameters:
-                param_key = self.daemon_name+'_'+param.name
-                param_status, param_value = param.aggregate(measurements_in_window)
-                data.update({param_key: param_value})
-                safe = safe and param_status != ParameterStatus.Unsafe
-
-            measurement_start = measurements_in_window[0]['date']
-            measurement_end = measurements_in_window[-1]['date']
-
-            data.update({
-                self.daemon_name+'_measurement_start':
-                    measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                self.daemon_name+'_measurement_end':
-                    measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            })
-
-        return (safe, data)
-
-    def dashboard_status(self):
-        """Queries the aggregate status of the monitored daemon.
-           Returns data to be displayed in the web dashboard"""
-        # self._data is assumed to be chronologically ordered
-        window_start = datetime.datetime.utcnow() - self._window_length
-
-        measurements_in_window = []
-
-        # Filter data for the measurements in our desired time window
-        for measurement in self._data:
-            date = measurement['date']
-
-            # Only include measurements within the desired window
-            if date >= window_start:
-                measurements_in_window.append(measurement)
-
-        data = {}
-        for param in self._parameters:
-            param_key = self.daemon_name+'_'+param.name
-            param_value = param.dashboard_aggregate(measurements_in_window)
-            data.update({param_key: param_value})
-
-        return data
-
-    def override_limits(self, parameter, disabled):
-        """Disable or re-enable limit checks on a named parameter.
-           If parameter is None, then acts on all parameters on this watcher"""
-
-        success = False
-        for param in self._parameters:
-            if (parameter is None or param.name == parameter) and param.has_limits():
-                param.override_limit(disabled)
-                success = True
-        return success
-
-    def parameters_with_limits(self):
-        """Return a list of the parameter names that have limits"""
-        return [param.name for param in self._parameters if param.has_limits()]
-
-    def clear_history(self):
-        """Clear the cached measurements"""
-        self._data.clear()
-
 class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
 
     def __init__(self):
         self._watchers = [
-            PyroWatcher('vaisala', observatory.daemons.onemetre_vaisala, VAISALA_QUERY_DELAY,
+            PyroWatcher('vaisala', daemons.onemetre_vaisala, VAISALA_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, VAISALA_PARAMETERS),
-            PyroWatcher('roomalert', observatory.daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
+            PyroWatcher('roomalert', daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
-            PyroWatcher('superwasp', observatory.daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
+            PyroWatcher('superwasp', daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, SUPERWASP_PARAMETERS),
-            PyroWatcher('tng', observatory.daemons.tng_log, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
+            PyroWatcher('tng', daemons.tng_log, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
                         CONDITION_WINDOW_LENGTH, TNG_PARAMETERS),
-            PyroWatcher('diskspace', observatory.daemons.onemetre_tcs_diskspace,
+            PyroWatcher('diskspace', daemons.onemetre_tcs_diskspace,
                         DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
                         DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
-            PyroWatcher('netping', observatory.daemons.observatory_network_ping, NETPING_QUERY_DELAY,
-                        NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, NETPING_PARAMETERS),
-            PyroWatcher('power', observatory.daemons.onemetre_power, POWER_QUERY_DELAY,
+            PyroWatcher('netping', daemons.observatory_network_ping,
+                        NETPING_QUERY_DELAY, NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH,
+                        NETPING_PARAMETERS),
+            PyroWatcher('power', daemons.onemetre_power, POWER_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
         ]
 
     @Pyro4.expose
     def status(self):
-        """Returns the aggregated status of the monitored daemons.
-           Each measurement is a tuple of min value, max value, measurement valid
-        """
-        can_observe = True
-        ret = {}
-        for watcher in self._watchers:
-            obs, data = watcher.status()
-            can_observe = can_observe and obs
-            ret.update(data)
-
-        ret.update({'can_observe': can_observe})
-        return ret
-
-    @Pyro4.expose
-    def dashboard_status(self):
         """Returns the aggregated dashboard status of the monitored daemons."""
         ret = {}
         for watcher in self._watchers:
-            ret.update(watcher.dashboard_status())
+            ret[watcher.daemon_name] = watcher.status()
         return ret
+
+    @Pyro4.expose
+    def safe_to_observe(self):
+        """Returns true if conditions are safe to observe."""
+        return not any(w.status()['status'] == ParameterStatus.Unsafe for w in self._watchers)
 
     @Pyro4.expose
     def override_parameter_limits(self, watcher_name, parameter_name, disabled):
@@ -470,7 +180,7 @@ class EnvironmentDaemon:
                     message = 'Disabled' if disabled else 'Restored'
                     message += ' limit checks on ' + watcher_name
                     message += ' (all sensors)' if parameter_name is None else ' ' + parameter_name
-                    observatory.log.info('environmentd', message)
+                    log.info('environmentd', message)
                     return DisableParameterStatus.Success
                 return DisableParameterStatus.InvalidParameter
 
@@ -498,4 +208,4 @@ class EnvironmentDaemon:
             watcher.clear_history()
 
 if __name__ == '__main__':
-    observatory.daemons.onemetre_environment.launch(EnvironmentDaemon())
+    daemons.onemetre_environment.launch(EnvironmentDaemon())

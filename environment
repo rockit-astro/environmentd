@@ -27,7 +27,11 @@ import json
 import os
 import sys
 import Pyro4
-import warwick.observatory as observatory
+from warwick.observatory.common import daemons
+
+from warwick.w1m.environment import(
+    DisableParameterStatus,
+    ParameterStatus)
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
@@ -53,13 +57,15 @@ UPS_STATUS = {
     12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR,
 }
 
-class DisableParameterStatus:
-    """Return codes for ResetParameterStatus"""
-    Success, InvalidWatcher, InvalidParameter = range(3)
+DOOR_STATUS = {
+    False: FMT_BOLD + 'OPEN' + FMT_CLEAR,
+    True: FMT_BOLD + 'CLOSED' + FMT_CLEAR
+}
 
-class ParameterStatus:
-    """Status of a measurement parameter"""
-    Unsafe, Safe, Disabled = range(3)
+SECSYS_STATUS = {
+    False: FMT_BOLD + FMT_RED + 'TRIPPED' + FMT_CLEAR,
+    True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
+}
 
 STATUS_COLORS = {
     ParameterStatus.Unsafe: FMT_BOLD + FMT_RED,
@@ -72,125 +78,134 @@ def print_status():
     status = None
 
     try:
-        with observatory.daemons.onemetre_environment.connect() as environment:
+        with daemons.onemetre_environment.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
         return 1
 
+    safe = False
     if status is None:
         print('No data available')
     else:
+        safe = not any(status[sensor]['status'] == ParameterStatus.Unsafe for sensor in status)
         print('It is {}{}{} to observe'.format(
-            FMT_GREEN + FMT_BOLD if status['can_observe'] else FMT_RED + FMT_BOLD,
-            'SAFE' if status['can_observe'] else 'NOT SAFE', FMT_CLEAR))
+            FMT_GREEN + FMT_BOLD if safe else FMT_RED + FMT_BOLD,
+            'SAFE' if safe else 'NOT SAFE', FMT_CLEAR))
         print()
 
-        if status['vaisala_queue_len'] > 0:
-            print('Vaisala data from ' + format_date(status, 'vaisala'))
+        vaisala = status['vaisala']
+        if vaisala['measurement_count'] > 0:
+            print('Vaisala data from ' + format_date(vaisala))
 
-            wind_valid = False not in status['vaisala_wind_speed_valid']
-            print('             Wind: ' + format_range(status['vaisala_wind_speed'], ' km/h',
-                                                       valid=wind_valid))
-            print('      Median Wind: ' + format_single(status['vaisala_median_wind_speed'],
-                                                        ' km/h'))
+            data = vaisala['data']
+            wind_valid = data['wind_speed_valid']['status'] == ParameterStatus.Safe
+            print('             Wind: ' + format_measurement(data['wind_speed'], ' km/h',
+                                                             valid=wind_valid))
+            print('      Median Wind: ' + format_measurement(data['median_wind_speed'], ' km/h'))
 
-            pressure_valid = False not in status['vaisala_pressure_valid']
-            print('         Pressure: ' + format_range(status['vaisala_pressure'], ' hPa',
-                                                       valid=pressure_valid))
+            pressure_valid = data['pressure_valid']['status'] == ParameterStatus.Safe
+            print('         Pressure: ' + format_measurement(data['pressure'], ' hPa',
+                                                             valid=pressure_valid))
 
-            temp_valid = False not in status['vaisala_temperature_valid']
-            print('    Outside Temp.: ' + format_range(status['vaisala_temperature'], '\u00B0C',
-                                                       valid=temp_valid))
+            temp_valid = data['temperature_valid']['status'] == ParameterStatus.Safe
+            print('    Outside Temp.: ' + format_measurement(data['temperature'], '\u00B0C',
+                                                             valid=temp_valid))
 
-            humidity_valid = False not in status['vaisala_relative_humidity_valid']
-            print('     Outside Hum.: ' + format_range(status['vaisala_relative_humidity'],
-                                                       ' %RH', valid=humidity_valid))
+            humidity_valid = data['relative_humidity_valid']['status'] == ParameterStatus.Safe
+            print('     Outside Hum.: ' + format_measurement(data['relative_humidity'], ' %RH',
+                                                             valid=humidity_valid))
 
-            dewptd_valid = False not in status['vaisala_dew_point_delta_valid']
-            print('  Temp. > Dew Pt.: ' + format_range(status['vaisala_dew_point_delta'],
-                                                       '\u00B0C', fmt='.2f', valid=dewptd_valid))
+            dewptd_valid = data['dew_point_delta_valid']['status'] == ParameterStatus.Safe
+            print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C',
+                                                             fmt='.2f', valid=dewptd_valid))
 
-            accumulated_rain_valid = False not in status['vaisala_accumulated_rain_valid']
-            print('Accumulated Rain.: ' + format_range(status['vaisala_accumulated_rain'], ' mm',
-                                                       fmt='.2f', valid=accumulated_rain_valid))
+            acc_rain_valid = data['accumulated_rain_valid']['status'] == ParameterStatus.Safe
+            print('Accumulated Rain.: ' + format_measurement(data['accumulated_rain'], ' mm',
+                                                             fmt='.2f', valid=acc_rain_valid))
         else:
             print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
         print()
 
-        if status['roomalert_queue_len'] > 0:
-            print('RoomAlert data from ' + format_date(status, 'roomalert'))
-            print('   Internal Temp.: ' + format_range(status['roomalert_internal_temp'],
-                                                       '\u00B0C'))
-            print('    Internal Hum.: ' + format_range(status['roomalert_internal_humidity'],
-                                                       ' %RH'))
-            print('      Truss Temp.: ' + format_range(status['roomalert_truss_temp'],
-                                                       '\u00B0C', color=False))
-            print('     Server Temp.: ' + format_range(status['roomalert_roomalert_temp'],
-                                                       '\u00B0C', color=False))
-            print('      Server Hum.: ' + format_range(status['roomalert_roomalert_humidity'],
-                                                       ' %RH', color=False))
-            print('       Side Hatch: ' + format_open_closed(status['roomalert_hatch_closed']))
-            print('        Trap Door: ' + format_open_closed(status['roomalert_trap_closed']))
-            print(' Tel. Sec. System: ' + format_safe_tripped(status['roomalert_security_system_safe']))
+        roomalert = status['roomalert']
+        if roomalert['measurement_count'] > 0:
+            print('RoomAlert data from ' + format_date(roomalert))
+
+            data = roomalert['data']
+            print('   Internal Temp.: ' + format_measurement(data['internal_temp'], '\u00B0C'))
+            print('    Internal Hum.: ' + format_measurement(data['internal_humidity'], ' %RH'))
+            print('      Truss Temp.: ' + format_measurement(data['truss_temp'], '\u00B0C'))
+            print('     Server Temp.: ' + format_measurement(data['roomalert_temp'], '\u00B0C'))
+            print('      Server Hum.: ' + format_measurement(data['roomalert_humidity'], ' %RH'))
+            print('       Side Hatch: ' + format_set(data['hatch_closed'], DOOR_STATUS))
+            print('        Trap Door: ' + format_set(data['trap_closed'], DOOR_STATUS))
+            print(' Tel. Sec. System: ' + format_set(data['security_system_safe'], SECSYS_STATUS))
         else:
             print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
         print()
 
-        if status['superwasp_queue_len'] > 0:
-            print('SuperWASP data from ' + format_date(status, 'superwasp', color=False))
-            print('     Outside Hum.: ' + format_range(status['superwasp_ext_humidity'], ' %RH',
-                                                       color=False))
-            print('        Sky Temp.: ' + format_range(status['superwasp_sky_temp'], '\u00B0C',
-                                                       color=False))
-            print('  Temp. > Dew Pt.: ' + format_range(status['superwasp_dew_point_delta'],
-                                                       '\u00B0C', fmt='.2f', color=False))
+        superwasp = status['superwasp']
+        if superwasp['measurement_count'] > 0:
+            print('SuperWASP data from ' + format_date(superwasp))
+
+            data = superwasp['data']
+            print('     Outside Hum.: ' + format_measurement(data['ext_humidity'], ' %RH'))
+            print('        Sky Temp.: ' + format_measurement(data['sky_temp'], '\u00B0C'))
+            print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C',
+                                                             fmt='.2f'))
         else:
             print(FMT_YELLOW + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
         print()
 
-        if status['tng_queue_len'] > 0:
-            print('TNG data from ' + format_date(status, 'tng', color=False))
-            print('       Dust Conc.: ' + format_range(status['tng_dust'], ' ug/m\u00B3',
-                                                       color=False))
+        tng = status['tng']
+        if tng['measurement_count'] > 0:
+            print('TNG data from ' + format_date(tng))
+
+            data = tng['data']
+            print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
+            print('           Seeing: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
         else:
             print(FMT_YELLOW + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
         print()
 
-        if status['power_queue_len'] > 0:
-            print('UPS data from ' + format_date(status, 'power'))
-            print('         Main UPS: ' + format_ups(status, 'power_main_ups'))
-            print('         Dome UPS: ' + format_ups(status, 'power_dome_ups'))
+        power = status['power']
+        if power['measurement_count'] > 0:
+            print('UPS data from ' + format_date(power))
+            data = power['data']
+            print('         Main UPS: ' + format_ups(data, 'main_ups'))
+            print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
         else:
             print(FMT_RED + FMT_BOLD + 'No UPS data available' + FMT_CLEAR)
         print()
 
-        if status['netping_queue_len'] > 0:
-            print('Network ping data from ' + format_date(status, 'netping'))
-            print('           Google: ' + format_range(status['netping_google'], ' ms'))
-            print('         NGTSHead: ' + format_range(status['netping_ngtshead'], ' ms'))
+        netping = status['netping']
+        if netping['measurement_count'] > 0:
+            print('Network ping data from ' + format_date(netping))
+            data = netping['data']
+            print('           Google: ' + format_measurement(data['google'], ' ms'))
+            print('         NGTSHead: ' + format_measurement(data['ngtshead'], ' ms'))
         else:
             print(FMT_RED + FMT_BOLD + 'No ping data available' + FMT_CLEAR)
         print()
 
-        if status['diskspace_queue_len'] > 0:
-            # Convert from bytes to GiB
-            data_bytes = status['diskspace_data_fs_available_bytes']
-            data_gb = (round(data_bytes[0] / 2**30, 1), data_bytes[1])
-            suffix = ' GiB ({}) available'.format(
-                format_single(status['diskspace_data_fs_percent_available'], '%', fmt=''))
-            print('Disk space from ' + format_date(status, 'diskspace'))
-            print('   Data Partition: ' + format_single(data_gb, suffix))
+        diskspace = status['diskspace']
+        if diskspace['measurement_count'] > 0:
+            print('Disk space from ' + format_date(diskspace))
+
+            data = diskspace['data']
+            print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
+                                                           data['data_fs_percent_available']))
         else:
             print(FMT_RED + FMT_BOLD + 'No disk space data available' + FMT_CLEAR)
         print()
-    return status is None or not status['can_observe']
+
+    return safe
 
 def print_json():
     """Prints the latest environment data in machine-readable form"""
     status = None
     try:
-        with observatory.daemons.onemetre_environment.connect() as environment:
+        with daemons.onemetre_environment.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -200,78 +215,94 @@ def print_json():
 
     return 0
 
-def format_date(data, group, color=True):
+def format_date(data):
     """Builds a formatted date string for the named data group"""
-    start = datetime.datetime.strptime(data[group + '_measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-    end = datetime.datetime.strptime(data[group + '_measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
-    data = (start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S'), data[group + '_data_status'])
-    return format_range(data, ':', fmt='', color=color)
+    start = datetime.datetime.strptime(data['measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
+    end = datetime.datetime.strptime(data['measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
 
-def format_range(data, suffix='', fmt='.1f', color=True, valid=True):
+    ret = FMT_BOLD
+    if data['measurement_status'] == ParameterStatus.Unsafe:
+        ret += FMT_RED
+    elif data['measurement_status'] == ParameterStatus.Disabled:
+        ret += FMT_YELLOW
+
+    ret += '{0} \u2014 {1}'.format(start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S')) + FMT_CLEAR
+    return ret
+
+def format_value(value, limits, fmt='.1f'):
+    """Builds a formatted string colored based on the specified limits"""
+    color = FMT_BOLD
+    if limits:
+        color += FMT_RED if value < limits[0] or value > limits[1] else FMT_GREEN
+    return color +  ('{0' + fmt +'}').format(value) + FMT_CLEAR
+
+def format_measurement(data, suffix='', fmt='.1f', valid=True):
     """Builds a formatted string with a value range"""
     if fmt != '':
         fmt = ':' + fmt
 
-    color_fmt = '' if not color else STATUS_COLORS[data[2]]
-    min_value = color_fmt + ('{0' + fmt +'}').format(data[0]) + FMT_CLEAR
-    max_value = color_fmt + ('{0' + fmt +'}').format(data[1]) + FMT_CLEAR
+    ret = ''
 
-    # Show a single value if min and max are the same
-    if data[0] == data[1]:
-        ret = min_value
-    else:
-        ret = min_value + FMT_BOLD + ' \u2014 ' + FMT_CLEAR + max_value
+    limits = data['limits'] if 'limits' in data else None
+    if 'min' in data:
+        ret += format_value(data['min'], limits, fmt) + ' \u2264 '
+
+    ret += format_value(data['latest'], limits, fmt)
+
+    if 'max' in data:
+        ret += ' \u2264 ' + format_value(data['max'], limits, fmt)
 
     ret += suffix
 
     if not valid:
         ret += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
 
-    if data[2] == ParameterStatus.Disabled:
+    if data['status'] == ParameterStatus.Disabled and limits:
         ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
 
     return ret
 
-def format_single(data, suffix='', fmt='.1f', color=True):
-    """Builds a formatted string with a value"""
-    return format_range((data[0], data[0], data[1]), suffix=suffix, fmt=fmt, color=color)
+def format_set(data, values):
+    """Builds a formatted string with specified values"""
+    display_values = [values[value] for value in values if value in data['values']]
 
-def format_open_closed(data):
-    """Builds a formatted string with OPEN and/or CLOSED"""
-    string = ""
-    if False in data:
-        string += "OPEN"
-    if True in data:
-        if len(string) > 0:
-            string += ", "
-        string += "CLOSED"
-    return FMT_BOLD + string + FMT_CLEAR
+    ret = values[data['latest']] if data['latest'] in values else ''
 
-def format_safe_tripped(data):
-    """Builds a formatted string with SAFE or TRIPPED"""
-    string = ""
-    if False in data:
-        string += FMT_BOLD + FMT_RED + "TRIPPED" + FMT_CLEAR
-    if True in data:
-        if len(string) > 0:
-            string += ", "
-        string += FMT_BOLD + FMT_GREEN + "SAFE" + FMT_CLEAR
-    return string
+    if len(data['values']) > 1:
+        if ret:
+            ret += ' '
+        ret += '[' + ', '.join(display_values) + ']'
+
+    if data['status'] == ParameterStatus.Disabled and 'valid_values' in data:
+        ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
+
+    return ret
 
 def format_ups(data, prefix):
     """Builds a formatted string for a UPS status"""
-    battery = format_range(data[prefix + '_battery_remaining'], '%', fmt='')
-    ret = ''
-    for status in data[prefix + '_status']:
-        if len(ret) > 0:
-            ret += ', '
-        ret += UPS_STATUS[status]
+    battery_data = data[prefix + '_battery_remaining']
+    battery = format_value(battery_data['latest'], battery_data['limits'], fmt='') + '%'
+
+    ret = format_set(data[prefix + '_status'], UPS_STATUS)
     ret += ' (' + battery + ' battery)'
 
-    if False in data[prefix + '_battery_healthy']:
+    if False in data[prefix + '_battery_healthy']['values']:
         ret += FMT_BOLD + FMT_YELLOW + ' REPLACE BATTERY' + FMT_CLEAR
 
     return ret
+
+def format_diskspace(raw, percent):
+    """Builds a formatted string for the disk status"""
+    bytes_safe = raw['latest'] >= raw['limits'][0] and raw['latest'] <= raw['limits'][1]
+    bytes_color = FMT_GREEN if bytes_safe else FMT_RED
+    bytes_str = FMT_BOLD + bytes_color + str(round(raw['latest'] / 2**30, 1)) + FMT_CLEAR
+
+    percent_safe = percent['latest'] >= percent['limits'][0] \
+        and percent['latest'] <= percent['limits'][1]
+    percent_color = FMT_GREEN if percent_safe else FMT_RED
+    percent_str = FMT_BOLD + percent_color + '{0:.0f}'.format(percent['latest']) + FMT_CLEAR
+
+    return '{0} GiB ({1}%) available'.format(bytes_str, percent_str)
 
 def override_parameter_limits(disable, args):
     """Disable or re-enable a watcher parameter"""
@@ -280,7 +311,7 @@ def override_parameter_limits(disable, args):
         watcher = args[0]
         parameter = args[1] if arg_count == 2 else None
         try:
-            with observatory.daemons.onemetre_environment.connect() as environment:
+            with daemons.onemetre_environment.connect() as environment:
                 ret = environment.override_parameter_limits(watcher, parameter, disable)
                 if ret == DisableParameterStatus.Success:
                     return 0
@@ -303,7 +334,7 @@ def override_parameter_limits(disable, args):
 def list_watchers():
     """Print a list of watcher names (for use by bash completions)"""
     try:
-        with observatory.daemons.onemetre_environment.connect() as environment:
+        with daemons.onemetre_environment.connect() as environment:
             names = environment.list_watchers()
             print(' '.join(names))
             return 0
@@ -313,12 +344,12 @@ def list_watchers():
 
 def list_limited_parameters(args):
     """Print a list of watcher parameter names (for use by bash completions)"""
-    if len(args) == 0:
+    if not args:
         print('')
         return 1
 
     try:
-        with observatory.daemons.onemetre_environment.connect() as environment:
+        with daemons.onemetre_environment.connect() as environment:
             names = environment.list_limited_parameters(args[0])
             print(' '.join(names))
             return 0
@@ -359,4 +390,3 @@ if __name__ == '__main__':
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))
-
