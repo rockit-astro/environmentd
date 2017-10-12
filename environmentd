@@ -105,9 +105,12 @@ SUPERWASP_PARAMETERS = [
 ]
 
 TNG_PARAMETERS = [
-    AggregateParameter('dust', AggregateBehaviour.Range),
-    AggregateParameter('solarimeter', AggregateBehaviour.Range),
-    AggregateParameter('seeing', AggregateBehaviour.Range)
+    AggregateParameter('dust', AggregateBehaviour.Latest),
+    AggregateParameter('dust_valid', AggregateBehaviour.Latest),
+    AggregateParameter('solarimeter', AggregateBehaviour.Latest),
+    AggregateParameter('solarimeter_valid', AggregateBehaviour.Latest),
+    AggregateParameter('seeing', AggregateBehaviour.Latest),
+    AggregateParameter('seeing_valid', AggregateBehaviour.Latest)
 ]
 
 DISKSPACE_PARAMETERS = [

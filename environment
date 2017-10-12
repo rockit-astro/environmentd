@@ -162,8 +162,12 @@ def print_status():
             print('TNG data from ' + format_date(tng))
 
             data = tng['data']
-            print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
-            print('           Seeing: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
+            dust_valid = data['dust_valid']['latest'] == True
+            print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3',
+                                                             valid=dust_valid))
+            seeing_valid = data['seeing_valid']['latest'] == True
+            print('           Seeing: ' + format_measurement(data['seeing'], '"',
+                                                             valid=seeing_valid))
         else:
             print(FMT_YELLOW + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
         print()
@@ -238,6 +242,10 @@ def format_value(value, limits, fmt='.1f'):
 
 def format_measurement(data, suffix='', fmt='.1f', valid=True):
     """Builds a formatted string with a value range"""
+
+    if not valid:
+        return FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
+
     if fmt != '':
         fmt = ':' + fmt
 
@@ -253,9 +261,6 @@ def format_measurement(data, suffix='', fmt='.1f', valid=True):
         ret += ' \u2264 ' + format_value(data['max'], limits, fmt)
 
     ret += suffix
-
-    if not valid:
-        ret += FMT_RED + FMT_BOLD + ' (INVALID)' + FMT_CLEAR
 
     if data['status'] == ParameterStatus.Disabled and limits:
         ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
