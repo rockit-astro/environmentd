@@ -162,12 +162,10 @@ def print_status():
             print('TNG data from ' + format_date(tng))
 
             data = tng['data']
-            dust_valid = data['dust_valid']['latest'] == True
             print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3',
-                                                             valid=dust_valid))
-            seeing_valid = data['seeing_valid']['latest'] == True
+                                                             valid=data['dust_valid']['latest']))
             print('           Seeing: ' + format_measurement(data['seeing'], '"',
-                                                             valid=seeing_valid))
+                                                             valid=data['seeing_valid']['latest']))
         else:
             print(FMT_YELLOW + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
         print()
