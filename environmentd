@@ -192,7 +192,7 @@ class EnvironmentDaemon:
     @Pyro4.expose
     def list_watchers(self):
         """Return a list of watcher names"""
-        return [watcher.daemon_name for watcher in self._watchers]
+        return [watcher.daemon_name for watcher in self._watchers if watcher.parameters_with_limits()]
 
     @Pyro4.expose
     def list_limited_parameters(self, watcher_name):
