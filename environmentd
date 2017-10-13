@@ -29,7 +29,11 @@
 import datetime
 import sys
 import Pyro4
-from warwick.observatory.common import daemons, log
+from warwick.observatory.common import (
+    daemons,
+    log,
+    IP)
+from warwick.observatory.common.helpers import pyro_client_matches
 from warwick.w1m.environment import (
     PyroWatcher,
     AggregateParameter,
@@ -39,6 +43,9 @@ from warwick.w1m.environment import (
 
 # Include more detailed exceptions
 sys.excepthook = Pyro4.util.excepthook
+
+# Machines that are allowed to issue parameter overrides and clear history
+CONTROL_IPS = [IP.OneMetreDome, IP.OneMetreTCS]
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -176,6 +183,9 @@ class EnvironmentDaemon:
     @Pyro4.expose
     def override_parameter_limits(self, watcher_name, parameter_name, disabled):
         """Disable or re-enable safety checking of a given parameter"""
+        if not pyro_client_matches(CONTROL_IPS):
+            return CommandStatus.InvalidControlIP
+
         for watcher in self._watchers:
             if watcher.daemon_name == watcher_name:
                 success = watcher.override_limits(parameter_name, disabled)
@@ -205,6 +215,9 @@ class EnvironmentDaemon:
     @Pyro4.expose
     def clear_history(self):
         """Clear the cached measurements"""
+        if not pyro_client_matches(CONTROL_IPS):
+            return CommandStatus.InvalidControlIP
+
         print('{} MESSAGE: clearing cached history' \
             .format(datetime.datetime.utcnow()))
         log.warning('environmentd', 'Clearing cached environment measurements')
