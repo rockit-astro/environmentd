@@ -19,9 +19,31 @@
 
 # pylint: disable=too-few-public-methods
 
-class DisableParameterStatus:
+class CommandStatus:
     """Return codes for ResetParameterStatus"""
-    Success, InvalidWatcher, InvalidParameter = range(3)
+    Success = 0
+    InvalidControlIP = 10
+
+    InvalidWatcher = 11
+    InvalidParameter = 12
+
+    _messages = {
+        # General error codes
+        10: 'error: command not accepted from this IP',
+
+        11: 'error: invalid watcher name',
+        12: 'error: invalid parameter name',
+
+        -100: 'error: terminated by user',
+        -101: 'error: unable to communicate with environment daemon'
+    }
+
+    @classmethod
+    def message(cls, error_code):
+        """Returns a human readable string describing an error code"""
+        if error_code in cls._messages:
+            return cls._messages[error_code]
+        return 'error: Unknown error code {}'.format(error_code)
 
 class ParameterStatus:
     """Status of a measurement parameter"""

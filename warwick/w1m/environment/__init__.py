@@ -19,4 +19,4 @@
 
 from .pyro_watcher import PyroWatcher
 from .aggregate_parameter import AggregateParameter, AggregateBehaviour
-from .constants import ParameterStatus, DisableParameterStatus
+from .constants import ParameterStatus, CommandStatus

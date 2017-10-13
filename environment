@@ -30,7 +30,7 @@ import Pyro4
 from warwick.observatory.common import daemons
 
 from warwick.w1m.environment import(
-    DisableParameterStatus,
+    CommandStatus,
     ParameterStatus)
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
@@ -72,6 +72,20 @@ STATUS_COLORS = {
     ParameterStatus.Safe: FMT_BOLD + FMT_GREEN,
     ParameterStatus.Disabled: FMT_BOLD
 }
+
+def run_command(command):
+    """Prints the message associated with a status code and returns the code"""
+    try:
+        ret = command()
+    except KeyboardInterrupt:
+        ret = -100
+    except Pyro4.errors.CommunicationError:
+        ret = -101
+
+    # Print message associated with error codes, except for -1 (error handled locally)
+    if ret != -1 and ret != 0:
+        print(CommandStatus.message(ret))
+    sys.exit(ret)
 
 def print_status():
     """Prints the latest environment data in human-readable form"""
@@ -313,26 +327,12 @@ def override_parameter_limits(disable, args):
     if arg_count == 1 or arg_count == 2:
         watcher = args[0]
         parameter = args[1] if arg_count == 2 else None
-        try:
-            with daemons.onemetre_environment.connect() as environment:
-                ret = environment.override_parameter_limits(watcher, parameter, disable)
-                if ret == DisableParameterStatus.Success:
-                    return 0
-
-                if ret == DisableParameterStatus.InvalidWatcher:
-                    print('error: invalid id ' + watcher)
-                elif ret == DisableParameterStatus.InvalidParameter:
-                    print('error: invalid parameter ' + parameter)
-                else:
-                    print('error: unknown error code ' + str(ret))
-                return 1
-        except Pyro4.errors.CommunicationError:
-            print('error: unable to communicate with the environment daemon')
-            return 1
+        with daemons.onemetre_environment.connect() as environment:
+            return environment.override_parameter_limits(watcher, parameter, disable)
 
     command = 'override' if disable else 'restore'
     print('usage: {} {} <watcher> [<parameter>]'.format(SCRIPT_NAME, command))
-    return 1
+    return -1
 
 def list_watchers():
     """Print a list of watcher names (for use by bash completions)"""
@@ -383,9 +383,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'json':
         sys.exit(print_json())
     elif sys.argv[1] == 'override':
-        sys.exit(override_parameter_limits(True, sys.argv[2:]))
+        run_command(lambda: override_parameter_limits(True, sys.argv[2:]))
     elif sys.argv[1] == 'restore':
-        sys.exit(override_parameter_limits(False, sys.argv[2:]))
+        run_command(lambda: override_parameter_limits(False, sys.argv[2:]))
     elif sys.argv[1] == 'list-watchers':
         sys.exit(list_watchers())
     elif sys.argv[1] == 'list-limited-parameters':

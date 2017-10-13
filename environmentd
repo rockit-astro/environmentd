@@ -35,7 +35,7 @@ from warwick.w1m.environment import (
     AggregateParameter,
     AggregateBehaviour,
     ParameterStatus,
-    DisableParameterStatus)
+    CommandStatus)
 
 # Include more detailed exceptions
 sys.excepthook = Pyro4.util.excepthook
@@ -184,10 +184,10 @@ class EnvironmentDaemon:
                     message += ' limit checks on ' + watcher_name
                     message += ' (all sensors)' if parameter_name is None else ' ' + parameter_name
                     log.info('environmentd', message)
-                    return DisableParameterStatus.Success
-                return DisableParameterStatus.InvalidParameter
+                    return CommandStatus.Success
+                return CommandStatus.InvalidParameter
 
-        return DisableParameterStatus.InvalidWatcher
+        return CommandStatus.InvalidWatcher
 
     @Pyro4.expose
     def list_watchers(self):
@@ -207,8 +207,10 @@ class EnvironmentDaemon:
         """Clear the cached measurements"""
         print('{} MESSAGE: clearing cached history' \
             .format(datetime.datetime.utcnow()))
+        log.warning('environmentd', 'Clearing cached environment measurements')
         for watcher in self._watchers:
             watcher.clear_history()
+        return CommandStatus.Success
 
 if __name__ == '__main__':
     daemons.onemetre_environment.launch(EnvironmentDaemon())
