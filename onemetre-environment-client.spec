@@ -1,5 +1,5 @@
 Name:      onemetre-environment-client
-Version:   2.0.2
+Version:   3.0.0
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment client for the Warwick one-metre telescope.

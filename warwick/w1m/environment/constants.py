@@ -40,7 +40,3 @@ class CommandStatus:
         if error_code in cls._messages:
             return cls._messages[error_code]
         return 'error: Unknown error code {}'.format(error_code)
-
-class ParameterStatus:
-    """Status of a measurement parameter"""
-    Unsafe, Safe = range(2)

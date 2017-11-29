@@ -18,5 +18,8 @@
 """environmentd common code"""
 
 from .pyro_watcher import PyroWatcher
-from .aggregate_parameter import AggregateParameter, AggregateBehaviour
-from .constants import ParameterStatus, CommandStatus
+from .aggregate_parameter import (
+    AggregateParameter,
+    AggregateBehaviour,
+    FilterInvalidAggregateParameter)
+from .constants import CommandStatus

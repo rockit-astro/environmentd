@@ -21,6 +21,7 @@
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-locals
 # pylint: disable=too-few-public-methods
+# pylint: disable=bare-except
 
 import datetime
 import json
@@ -28,10 +29,7 @@ import os
 import sys
 import Pyro4
 from warwick.observatory.common import daemons
-
-from warwick.w1m.environment import(
-    CommandStatus,
-    ParameterStatus)
+from warwick.w1m.environment import CommandStatus
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
@@ -67,11 +65,6 @@ SECSYS_STATUS = {
     True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
 }
 
-STATUS_COLORS = {
-    ParameterStatus.Unsafe: FMT_BOLD + FMT_RED,
-    ParameterStatus.Safe: FMT_BOLD + FMT_GREEN,
-}
-
 def run_command(command):
     """Prints the message associated with a status code and returns the code"""
     try:
@@ -88,133 +81,85 @@ def run_command(command):
 
 def print_status():
     """Prints the latest environment data in human-readable form"""
-    status = None
-
     try:
         with daemons.onemetre_environment.connect() as environment:
-            status = environment.status()
+            data = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
         return 1
 
-    safe = False
-    if status is None:
+    if data is None:
         print('No data available')
     else:
-        safe = not any(status[sensor]['status'] == ParameterStatus.Unsafe for sensor in status)
-        print('It is {}{}{} to observe'.format(
-            FMT_GREEN + FMT_BOLD if safe else FMT_RED + FMT_BOLD,
-            'SAFE' if safe else 'NOT SAFE', FMT_CLEAR))
-        print()
+        print_vaisala_status('W1m Vaisala', data['vaisala'])
+        print_roomalert_status(data['roomalert'])
+        print_superwasp_status(data['superwasp'])
+        print_tng_status(data['tng'])
+        print_power_status(data['power'])
+        print_network_status(data['netping'])
+        print_diskspace_status(data['diskspace'])
 
-        vaisala = status['vaisala']
-        if vaisala['measurement_count'] > 0:
-            print('Vaisala data from ' + format_date(vaisala))
+    return 0
 
-            data = vaisala['data']
-            wind_valid = data['wind_speed_valid']['status'] == ParameterStatus.Safe
-            print('             Wind: ' + format_measurement(data['wind_speed'], ' km/h',
-                                                             valid=wind_valid))
-            print('      Median Wind: ' + format_measurement(data['median_wind_speed'], ' km/h'))
+def print_vaisala_status(name, data):
+    """Prints data from one of the Vaisala units"""
+    print(name + ' data from ' + format_date(data))
+    print('             Wind: ' + format_measurement(data['wind_speed'], ' km/h'))
+    print('      Median Wind: ' + format_measurement(data['median_wind_speed'], ' km/h'))
+    print('         Pressure: ' + format_measurement(data['pressure'], ' hPa'))
+    print('    Outside Temp.: ' + format_measurement(data['temperature'], '\u00B0C'))
+    print('     Outside Hum.: ' + format_measurement(data['relative_humidity'], ' %RH'))
+    print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C', fmt='.2f'))
+    print('Accumulated Rain.: ' + format_measurement(data['accumulated_rain'], ' mm', fmt='.2f'))
+    print()
 
-            pressure_valid = data['pressure_valid']['status'] == ParameterStatus.Safe
-            print('         Pressure: ' + format_measurement(data['pressure'], ' hPa',
-                                                             valid=pressure_valid))
+def print_roomalert_status(data):
+    """Prints data from the W1m Room Alert"""
+    print('Room Alert data from ' + format_date(data))
+    print('   Internal Temp.: ' + format_measurement(data['internal_temp'], '\u00B0C'))
+    print('    Internal Hum.: ' + format_measurement(data['internal_humidity'], ' %RH'))
+    print('      Truss Temp.: ' + format_measurement(data['truss_temp'], '\u00B0C'))
+    print('     Server Temp.: ' + format_measurement(data['roomalert_temp'], '\u00B0C'))
+    print('      Server Hum.: ' + format_measurement(data['roomalert_humidity'], ' %RH'))
+    print('       Side Hatch: ' + format_set(data['hatch_closed'], DOOR_STATUS))
+    print('        Trap Door: ' + format_set(data['trap_closed'], DOOR_STATUS))
+    print(' Tel. Sec. System: ' + format_set(data['security_system_safe'], SECSYS_STATUS))
+    print()
 
-            temp_valid = data['temperature_valid']['status'] == ParameterStatus.Safe
-            print('    Outside Temp.: ' + format_measurement(data['temperature'], '\u00B0C',
-                                                             valid=temp_valid))
+def print_superwasp_status(data):
+    """Prints data from the SuperWASP weather log"""
+    print('SuperWASP data from ' + format_date(data))
+    print('     Outside Hum.: ' + format_measurement(data['ext_humidity'], ' %RH'))
+    print('        Sky Temp.: ' + format_measurement(data['sky_temp'], '\u00B0C'))
+    print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C', fmt='.2f'))
+    print()
 
-            humidity_valid = data['relative_humidity_valid']['status'] == ParameterStatus.Safe
-            print('     Outside Hum.: ' + format_measurement(data['relative_humidity'], ' %RH',
-                                                             valid=humidity_valid))
+def print_tng_status(data):
+    """Prints data from the TNG weather log"""
+    print('TNG data from ' + format_date(data))
+    print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
+    print('           Seeing: ' + format_measurement(data['seeing'], '"'))
+    print()
 
-            dewptd_valid = data['dew_point_delta_valid']['status'] == ParameterStatus.Safe
-            print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C',
-                                                             fmt='.2f', valid=dewptd_valid))
+def print_power_status(data):
+    """Prints data from the W1m UPSes"""
+    print('UPS data from ' + format_date(data))
+    print('         Main UPS: ' + format_ups(data, 'main_ups'))
+    print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
+    print()
 
-            acc_rain_valid = data['accumulated_rain_valid']['status'] == ParameterStatus.Safe
-            print('Accumulated Rain.: ' + format_measurement(data['accumulated_rain'], ' mm',
-                                                             fmt='.2f', valid=acc_rain_valid))
-        else:
-            print(FMT_RED + FMT_BOLD + 'No Vaisala data available' + FMT_CLEAR)
-        print()
+def print_network_status(data):
+    """Prints data from the network ping monitor"""
+    print('Network ping data from ' + format_date(data))
+    print('           Google: ' + format_measurement(data['google'], ' ms'))
+    print('         NGTSHead: ' + format_measurement(data['ngtshead'], ' ms'))
+    print()
 
-        roomalert = status['roomalert']
-        if roomalert['measurement_count'] > 0:
-            print('RoomAlert data from ' + format_date(roomalert))
-
-            data = roomalert['data']
-            print('   Internal Temp.: ' + format_measurement(data['internal_temp'], '\u00B0C'))
-            print('    Internal Hum.: ' + format_measurement(data['internal_humidity'], ' %RH'))
-            print('      Truss Temp.: ' + format_measurement(data['truss_temp'], '\u00B0C'))
-            print('     Server Temp.: ' + format_measurement(data['roomalert_temp'], '\u00B0C'))
-            print('      Server Hum.: ' + format_measurement(data['roomalert_humidity'], ' %RH'))
-            print('       Side Hatch: ' + format_set(data['hatch_closed'], DOOR_STATUS))
-            print('        Trap Door: ' + format_set(data['trap_closed'], DOOR_STATUS))
-            print(' Tel. Sec. System: ' + format_set(data['security_system_safe'], SECSYS_STATUS))
-        else:
-            print(FMT_RED + FMT_BOLD + 'No Room Alert data available' + FMT_CLEAR)
-        print()
-
-        superwasp = status['superwasp']
-        if superwasp['measurement_count'] > 0:
-            print('SuperWASP data from ' + format_date(superwasp))
-
-            data = superwasp['data']
-            print('     Outside Hum.: ' + format_measurement(data['ext_humidity'], ' %RH'))
-            print('        Sky Temp.: ' + format_measurement(data['sky_temp'], '\u00B0C'))
-            print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C',
-                                                             fmt='.2f'))
-        else:
-            print(FMT_YELLOW + FMT_BOLD + 'No SuperWASP data available' + FMT_CLEAR)
-        print()
-
-        tng = status['tng']
-        if tng['measurement_count'] > 0:
-            print('TNG data from ' + format_date(tng))
-
-            data = tng['data']
-            print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3',
-                                                             valid=data['dust_valid']['latest']))
-            print('           Seeing: ' + format_measurement(data['seeing'], '"',
-                                                             valid=data['seeing_valid']['latest']))
-        else:
-            print(FMT_YELLOW + FMT_BOLD + 'No TNG data available' + FMT_CLEAR)
-        print()
-
-        power = status['power']
-        if power['measurement_count'] > 0:
-            print('UPS data from ' + format_date(power))
-            data = power['data']
-            print('         Main UPS: ' + format_ups(data, 'main_ups'))
-            print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
-        else:
-            print(FMT_RED + FMT_BOLD + 'No UPS data available' + FMT_CLEAR)
-        print()
-
-        netping = status['netping']
-        if netping['measurement_count'] > 0:
-            print('Network ping data from ' + format_date(netping))
-            data = netping['data']
-            print('           Google: ' + format_measurement(data['google'], ' ms'))
-            print('         NGTSHead: ' + format_measurement(data['ngtshead'], ' ms'))
-        else:
-            print(FMT_RED + FMT_BOLD + 'No ping data available' + FMT_CLEAR)
-        print()
-
-        diskspace = status['diskspace']
-        if diskspace['measurement_count'] > 0:
-            print('Disk space from ' + format_date(diskspace))
-
-            data = diskspace['data']
-            print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
-                                                           data['data_fs_percent_available']))
-        else:
-            print(FMT_RED + FMT_BOLD + 'No disk space data available' + FMT_CLEAR)
-        print()
-
-    return safe
+def print_diskspace_status(data):
+    """Prints data from the W1m TCS disk space monitor"""
+    print('Disk space from ' + format_date(data))
+    print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
+                                                   data['data_fs_percent_available']))
 
 def print_json():
     """Prints the latest environment data in machine-readable form"""
@@ -232,14 +177,29 @@ def print_json():
 
 def format_date(data):
     """Builds a formatted date string for the named data group"""
-    start = datetime.datetime.strptime(data['measurement_start'], '%Y-%m-%dT%H:%M:%SZ')
-    end = datetime.datetime.strptime(data['measurement_end'], '%Y-%m-%dT%H:%M:%SZ')
+    start = None
+    end = None
+    current = False
+    for param in data:
+        try:
+            param_start = datetime.datetime.strptime(data[param]['date_start'],
+                                                     '%Y-%m-%dT%H:%M:%SZ')
+            param_end = datetime.datetime.strptime(data[param]['date_end'], '%Y-%m-%dT%H:%M:%SZ')
+            start = param_start if not start else min(start, param_start)
+            end = param_end if not end else min(end, param_end)
+            current = current or data[param]['current']
+        except:
+            pass
 
     ret = FMT_BOLD
-    if data['measurement_status'] == ParameterStatus.Unsafe:
-        ret += FMT_RED
-
-    ret += '{0} \u2014 {1}'.format(start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S')) + FMT_CLEAR
+    if start and end:
+        ret += start.strftime('%H:%M:%S') + ' \u2014 '
+        if not current:
+            ret += FMT_RED
+        ret += end.strftime('%H:%M:%S') + FMT_CLEAR
+        ret += FMT_BOLD + ':' + FMT_CLEAR
+    else:
+        ret += FMT_RED + 'NO DATA' + FMT_CLEAR
     return ret
 
 def format_value(value, limits, fmt='.1f'):
@@ -249,40 +209,47 @@ def format_value(value, limits, fmt='.1f'):
         color += FMT_RED if value < limits[0] or value > limits[1] else FMT_GREEN
     return color +  ('{0' + fmt +'}').format(value) + FMT_CLEAR
 
-def format_measurement(data, suffix='', fmt='.1f', valid=True):
+def format_measurement(data, suffix='', fmt='.1f'):
     """Builds a formatted string with a value range"""
-
-    if not valid:
-        return FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
-
     if fmt != '':
         fmt = ':' + fmt
 
     ret = ''
-
     limits = data['limits'] if 'limits' in data else None
     if 'min' in data:
         ret += format_value(data['min'], limits, fmt) + ' \u2264 '
 
-    ret += format_value(data['latest'], limits, fmt)
+    if data['current']:
+        ret += format_value(data['latest'], limits, fmt)
+    else:
+        ret += FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
     if 'max' in data:
         ret += ' \u2264 ' + format_value(data['max'], limits, fmt)
 
-    ret += suffix
+    if data['current'] or 'max' in data:
+        ret += suffix
+
+    if data['unsafe']:
+        ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
 
     return ret
 
 def format_set(data, values):
     """Builds a formatted string with specified values"""
-    display_values = [values[value] for value in values if value in data['values']]
+    if data['current']:
+        ret = values[data['latest']] if data['latest'] in values else ''
+    else:
+        ret = FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
-    ret = values[data['latest']] if data['latest'] in values else ''
-
-    if len(data['values']) > 1:
+    if 'values' in data and (len(data['values']) > 1 or not data['current']):
         if ret:
             ret += ' '
+        display_values = [values[value] for value in values if value in data['values']]
         ret += '[' + ', '.join(display_values) + ']'
+
+    if data['unsafe']:
+        ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
 
     return ret
 

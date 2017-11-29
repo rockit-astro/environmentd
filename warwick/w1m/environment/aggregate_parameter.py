@@ -20,12 +20,12 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 
+import datetime
 import statistics
-from .constants import ParameterStatus
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
-    RangeWithLimits, Range, MedianWithLimits, Median, LatestWithLimits, Latest, Set = range(7)
+    Range, Median, Latest, Set = range(4)
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
@@ -34,55 +34,61 @@ class AggregateParameter:
         self._behaviour = behaviour
         self._limits = limits
         self._valid_set_values = valid_set_values
-        self.has_limits = self.__has_limits()
-
         self._measurement_name = measurement_name if measurement_name is not None else name
 
-    def __has_limits(self):
-        """Returns true if this parameter has limits"""
-        if self._behaviour == AggregateBehaviour.Set:
-            return self._valid_set_values is not None
+    def aggregate(self, measurements, stale_measurement_threshold):
+        """
+        Aggregated information for this measurement
 
-        return self._behaviour in [
-            AggregateBehaviour.RangeWithLimits,
-            AggregateBehaviour.MedianWithLimits,
-            AggregateBehaviour.LatestWithLimits
-        ]
+        Returns a dictionary of values:
+           unsafe: True if at least one measurement within the window was outside the defined limits
+           current: True if the latest measurement was more recent than the stale data threshold
+           latest: Latest value for this parameter
+           date_start: Date of first measurement aggregated
+           date_end: Date of last measurement aggregated
+           date_count: Number of measurements aggregated
+           limits (optional): Tuple of min and max safe values if defined for this parameter
+           min (optional): Minimum aggregated value for Range parameters
+           max (optional): Maximum aggregated value for Range parameters
+           values (optional): Values seen during the aggregation period for Set parameters
+           valid_values (optional): Values that don't trigger an unsafe condition for Set parameters
 
-    def aggregate(self, measurements):
-        """Status data for the web dashboard"""
+        Note that unsafe will be FALSE if there is no data for this measurement, so always check
+        current and/or date_count before trying to interpret that flag
+        """
+
+        measurement_start = measurements[0]['date'] if measurements else datetime.datetime.min
+        measurement_end = measurements[-1]['date'] if measurements else datetime.datetime.min
+
         ret = {
-            'status': ParameterStatus.Unsafe,
+            'unsafe': False,
+            'current': measurement_end >= stale_measurement_threshold,
+            'date_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'date_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'date_count' : len(measurements),
         }
 
-        if self.has_limits:
+        if self._limits:
             ret['limits'] = self._limits
 
         if not measurements:
-            ret['error'] = 'NO DATA'
             return ret
 
-        if self._behaviour == AggregateBehaviour.RangeWithLimits or \
-                self._behaviour == AggregateBehaviour.Range:
-
-            ret['min'] = measurements[0][self._measurement_name]
-            ret['max'] = ret['min']
+        if self._behaviour == AggregateBehaviour.Range:
+            ret['min'] = ret['max'] = measurements[0][self._measurement_name]
             for measurement in measurements:
                 value = measurement[self._measurement_name]
                 ret['min'] = min(value, ret['min'])
                 ret['max'] = max(value, ret['max'])
                 ret['latest'] = value
 
-            if ret['min'] >= self._limits[0] and ret['max'] <= self._limits[1]:
-                ret['status'] = ParameterStatus.Safe
+            if self._limits:
+                ret['unsafe'] = ret['min'] < self._limits[0] or ret['max'] > self._limits[1]
 
-        elif self._behaviour == AggregateBehaviour.MedianWithLimits or \
-                self._behaviour == AggregateBehaviour.Median:
-
+        elif self._behaviour == AggregateBehaviour.Median:
             ret['latest'] = statistics.median([m[self._measurement_name] for m in measurements])
-            if ret['latest'] >= self._limits[0] \
-                    and ret['latest'] <= self._limits[1]:
-                ret['status'] = ParameterStatus.Safe
+            if self._limits:
+                ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
 
         elif self._behaviour == AggregateBehaviour.Set:
             ret['latest'] = measurements[-1][self._measurement_name]
@@ -93,18 +99,23 @@ class AggregateParameter:
             # Convert back to a list so it can be serialized as json
             ret['values'] = list(values)
 
-            # If all values are valid the set difference against _valid_set_values will be empty
-            if not values - self._valid_set_values:
-                ret['status'] = ParameterStatus.Safe
-
             if self._valid_set_values:
                 ret['valid_values'] = list(self._valid_set_values)
 
-        else:
-            latest = measurements[-1][self._measurement_name]
-            ret['latest'] = latest
+                # If all values are valid the set difference against _valid_set_values will be empty
+                ret['unsafe'] = bool(values - self._valid_set_values)
 
-            if latest >= self._limits[0] and latest <= self._limits[1]:
-                ret['status'] = ParameterStatus.Safe
+        else:
+            ret['latest'] = measurements[-1][self._measurement_name]
+
+            if self._limits and ret['current']:
+                ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
 
         return ret
+
+class FilterInvalidAggregateParameter(AggregateParameter):
+    """AggregateParameter subclass for parameters that are paired with a _valid flag"""
+    def aggregate(self, measurements, stale_measurement_threshold):
+        """Aggregates after discarding measurements that are not valid for this parameter"""
+        measurements = [m for m in measurements if m[self._measurement_name + '_valid']]
+        return super().aggregate(measurements, stale_measurement_threshold)

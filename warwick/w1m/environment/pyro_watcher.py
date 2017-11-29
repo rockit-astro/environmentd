@@ -27,7 +27,6 @@ import math
 import threading
 import time
 from warwick.observatory.common import log
-from .constants import ParameterStatus
 
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
@@ -94,40 +93,10 @@ class PyroWatcher:
 
         # Filter data for the measurements in our desired time window
         window_start = datetime.datetime.utcnow() - self._window_length
-        measurements_in_window = [m for m in self._data if m['date'] >= window_start]
-        measurements_in_window_count = len(measurements_in_window)
-        if measurements_in_window_count > 0:
-            measurement_start = measurements_in_window[0]['date']
-            measurement_end = measurements_in_window[-1]['date']
-        else:
-            measurement_start = datetime.datetime.min
-            measurement_end = datetime.datetime.min
+        stale_threshold = datetime.datetime.utcnow() - self._max_data_gap
 
-        # We only trust the measurement data if
-        #   (a) we have at least one measurement (measurement_start != datetime.datetime.min)
-        #   (b) the last measurement is no older than _max_data_gap
-        #   (c) all measurements within the defined window are safe
-        data = {}
-        measurement_status = ParameterStatus.Safe
-        if measurement_end + self._max_data_gap < datetime.datetime.utcnow() \
-                and any(param.has_limits for param in self._parameters):
-            measurement_status = ParameterStatus.Unsafe
-
-        status = measurement_status
-        for param in self._parameters:
-            param_value = param.aggregate(measurements_in_window)
-            data.update({param.name: param_value})
-            if param_value['status'] == ParameterStatus.Unsafe:
-                status = ParameterStatus.Unsafe
-
-        return {
-            'status': status,
-            'measurement_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'measurement_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
-            'measurement_count' : measurements_in_window_count,
-            'measurement_status': measurement_status,
-            'data': data
-        }
+        measurements = [m for m in self._data if m['date'] >= window_start]
+        return {p.name: p.aggregate(measurements, stale_threshold) for p in self._parameters}
 
     def clear_history(self):
         """Clear the cached measurements"""

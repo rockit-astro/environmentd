@@ -37,8 +37,8 @@ from warwick.observatory.common.helpers import pyro_client_matches
 from warwick.w1m.environment import (
     PyroWatcher,
     AggregateParameter,
+    FilterInvalidAggregateParameter,
     AggregateBehaviour,
-    ParameterStatus,
     CommandStatus)
 
 # Include more detailed exceptions
@@ -73,29 +73,19 @@ NETPING_QUERY_DELAY = 30
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 VAISALA_PARAMETERS = [
-    AggregateParameter('wind_speed', AggregateBehaviour.RangeWithLimits, limits=(0, 40)),
-    AggregateParameter('wind_speed_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
-    AggregateParameter('median_wind_speed', AggregateBehaviour.MedianWithLimits,
-                       measurement_name='wind_speed', limits=(0, 25)),
-    AggregateParameter('temperature', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
-    AggregateParameter('temperature_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
-    AggregateParameter('relative_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
-    AggregateParameter('relative_humidity_valid', AggregateBehaviour.Set,
-                       valid_set_values=set([True])),
-    AggregateParameter('pressure', AggregateBehaviour.RangeWithLimits, limits=(600, 1100)),
-    AggregateParameter('pressure_valid', AggregateBehaviour.Set, valid_set_values=set([True])),
-    AggregateParameter('accumulated_rain', AggregateBehaviour.RangeWithLimits, limits=(0, 0)),
-    AggregateParameter('accumulated_rain_valid', AggregateBehaviour.Set,
-                       valid_set_values=set([True])),
-    AggregateParameter('dew_point_delta', AggregateBehaviour.RangeWithLimits, limits=(2, 100)),
-    AggregateParameter('dew_point_delta_valid', AggregateBehaviour.Set,
-                       valid_set_values=set([True])),
+    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    FilterInvalidAggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
+                                    measurement_name='wind_speed'),
+    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50)),
+    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75)),
+    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range, limits=(600, 1100)),
+    FilterInvalidAggregateParameter('accumulated_rain', AggregateBehaviour.Range, limits=(0, 0)),
+    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
 ]
 
 ROOMALERT_PARAMETERS = [
-    AggregateParameter('internal_temp', AggregateBehaviour.RangeWithLimits, limits=(0, 50)),
-    AggregateParameter('internal_humidity', AggregateBehaviour.RangeWithLimits, limits=(0, 75)),
-
+    AggregateParameter('internal_temp', AggregateBehaviour.Range, limits=(0, 50)),
+    AggregateParameter('internal_humidity', AggregateBehaviour.Range, limits=(0, 75)),
     AggregateParameter('roomalert_temp', AggregateBehaviour.Range),
     AggregateParameter('roomalert_humidity', AggregateBehaviour.Range),
     AggregateParameter('truss_temp', AggregateBehaviour.Range),
@@ -112,35 +102,29 @@ SUPERWASP_PARAMETERS = [
 ]
 
 TNG_PARAMETERS = [
-    AggregateParameter('dust', AggregateBehaviour.Latest),
-    AggregateParameter('dust_valid', AggregateBehaviour.Latest),
-    AggregateParameter('solarimeter', AggregateBehaviour.Latest),
-    AggregateParameter('solarimeter_valid', AggregateBehaviour.Latest),
-    AggregateParameter('seeing', AggregateBehaviour.Latest),
-    AggregateParameter('seeing_valid', AggregateBehaviour.Latest)
+    FilterInvalidAggregateParameter('dust', AggregateBehaviour.Latest),
+    FilterInvalidAggregateParameter('solarimeter', AggregateBehaviour.Latest),
+    FilterInvalidAggregateParameter('seeing', AggregateBehaviour.Latest),
 ]
 
 DISKSPACE_PARAMETERS = [
-    AggregateParameter('data_fs_available_bytes', AggregateBehaviour.LatestWithLimits,
+    AggregateParameter('data_fs_available_bytes', AggregateBehaviour.Latest,
                        limits=(5 * 2**30, 2**40)),
-    AggregateParameter('data_fs_percent_available', AggregateBehaviour.LatestWithLimits,
-                       limits=(5, 100)),
+    AggregateParameter('data_fs_percent_available', AggregateBehaviour.Latest, limits=(5, 100)),
 ]
 
 NETPING_PARAMETERS = [
-    AggregateParameter('google', AggregateBehaviour.RangeWithLimits, limits=(0, 2000)),
-    AggregateParameter('ngtshead', AggregateBehaviour.RangeWithLimits, limits=(0, 2000)),
+    AggregateParameter('google', AggregateBehaviour.Range, limits=(0, 2000)),
+    AggregateParameter('ngtshead', AggregateBehaviour.Range, limits=(0, 2000)),
 ]
 
 POWER_PARAMETERS = [
     AggregateParameter('main_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
     AggregateParameter('main_ups_battery_healthy', AggregateBehaviour.Set),
-    AggregateParameter('main_ups_battery_remaining', AggregateBehaviour.RangeWithLimits,
-                       limits=(85, 101)),
+    AggregateParameter('main_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101)),
     AggregateParameter('dome_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
     AggregateParameter('dome_ups_battery_healthy', AggregateBehaviour.Set),
-    AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.RangeWithLimits,
-                       limits=(85, 101)),
+    AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101)),
     AggregateParameter('light', AggregateBehaviour.Set),
 ]
 
@@ -174,11 +158,6 @@ class EnvironmentDaemon:
         for watcher in self._watchers:
             ret[watcher.daemon_name] = watcher.status()
         return ret
-
-    @Pyro4.expose
-    def safe_to_observe(self):
-        """Returns true if conditions are safe to observe."""
-        return not any(w.status()['status'] == ParameterStatus.Unsafe for w in self._watchers)
 
     @Pyro4.expose
     def clear_history(self):
