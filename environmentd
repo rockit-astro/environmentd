@@ -181,38 +181,6 @@ class EnvironmentDaemon:
         return not any(w.status()['status'] == ParameterStatus.Unsafe for w in self._watchers)
 
     @Pyro4.expose
-    def override_parameter_limits(self, watcher_name, parameter_name, disabled):
-        """Disable or re-enable safety checking of a given parameter"""
-        if not pyro_client_matches(CONTROL_IPS):
-            return CommandStatus.InvalidControlIP
-
-        for watcher in self._watchers:
-            if watcher.daemon_name == watcher_name:
-                success = watcher.override_limits(parameter_name, disabled)
-                if success:
-                    message = 'Disabled' if disabled else 'Restored'
-                    message += ' limit checks on ' + watcher_name
-                    message += ' (all sensors)' if parameter_name is None else ' ' + parameter_name
-                    log.info('environmentd', message)
-                    return CommandStatus.Success
-                return CommandStatus.InvalidParameter
-
-        return CommandStatus.InvalidWatcher
-
-    @Pyro4.expose
-    def list_watchers(self):
-        """Return a list of watcher names"""
-        return [watcher.daemon_name for watcher in self._watchers if watcher.parameters_with_limits()]
-
-    @Pyro4.expose
-    def list_limited_parameters(self, watcher_name):
-        """Return a list of parameter names with limits for a given watcher"""
-        for watcher in self._watchers:
-            if watcher.daemon_name == watcher_name:
-                return watcher.parameters_with_limits()
-        return []
-
-    @Pyro4.expose
     def clear_history(self):
         """Clear the cached measurements"""
         if not pyro_client_matches(CONTROL_IPS):

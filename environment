@@ -70,7 +70,6 @@ SECSYS_STATUS = {
 STATUS_COLORS = {
     ParameterStatus.Unsafe: FMT_BOLD + FMT_RED,
     ParameterStatus.Safe: FMT_BOLD + FMT_GREEN,
-    ParameterStatus.Disabled: FMT_BOLD
 }
 
 def run_command(command):
@@ -239,8 +238,6 @@ def format_date(data):
     ret = FMT_BOLD
     if data['measurement_status'] == ParameterStatus.Unsafe:
         ret += FMT_RED
-    elif data['measurement_status'] == ParameterStatus.Disabled:
-        ret += FMT_YELLOW
 
     ret += '{0} \u2014 {1}'.format(start.strftime('%H:%M:%S'), end.strftime('%H:%M:%S')) + FMT_CLEAR
     return ret
@@ -274,9 +271,6 @@ def format_measurement(data, suffix='', fmt='.1f', valid=True):
 
     ret += suffix
 
-    if data['status'] == ParameterStatus.Disabled and limits:
-        ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
-
     return ret
 
 def format_set(data, values):
@@ -289,9 +283,6 @@ def format_set(data, values):
         if ret:
             ret += ' '
         ret += '[' + ', '.join(display_values) + ']'
-
-    if data['status'] == ParameterStatus.Disabled and 'valid_values' in data:
-        ret += FMT_YELLOW + FMT_BOLD + ' (DISABLED)' + FMT_CLEAR
 
     return ret
 
@@ -321,55 +312,12 @@ def format_diskspace(raw, percent):
 
     return '{0} GiB ({1}%) available'.format(bytes_str, percent_str)
 
-def override_parameter_limits(disable, args):
-    """Disable or re-enable a watcher parameter"""
-    arg_count = len(args)
-    if arg_count == 1 or arg_count == 2:
-        watcher = args[0]
-        parameter = args[1] if arg_count == 2 else None
-        with daemons.onemetre_environment.connect() as environment:
-            return environment.override_parameter_limits(watcher, parameter, disable)
-
-    command = 'override' if disable else 'restore'
-    print('usage: {} {} <watcher> [<parameter>]'.format(SCRIPT_NAME, command))
-    return -1
-
-def list_watchers():
-    """Print a list of watcher names (for use by bash completions)"""
-    try:
-        with daemons.onemetre_environment.connect() as environment:
-            names = environment.list_watchers()
-            print(' '.join(names))
-            return 0
-    except Pyro4.errors.CommunicationError:
-        print('')
-        return 1
-
-def list_limited_parameters(args):
-    """Print a list of watcher parameter names (for use by bash completions)"""
-    if not args:
-        print('')
-        return 1
-
-    try:
-        with daemons.onemetre_environment.connect() as environment:
-            names = environment.list_limited_parameters(args[0])
-            print(' '.join(names))
-            return 0
-    except Pyro4.errors.CommunicationError:
-        print('')
-        return 1
-
 def print_usage(name):
     """Prints the utility help"""
     print('Usage: {} <command>'.format(name))
     print()
     print('   status      print a human-readable summary of the aggregated environment status')
     print('   json        print a machine-readable summary of the aggregated environment status')
-    print('   override    temporarily disable triggering on an environment parameter')
-    print('   restore     re-enable triggering on an environment parameter')
-    # list_watchers and list_limited_parameters are only useful for bash completion
-    # so they are not listed here
     print()
 
     return 1
@@ -382,14 +330,6 @@ if __name__ == '__main__':
         sys.exit(print_status())
     elif sys.argv[1] == 'json':
         sys.exit(print_json())
-    elif sys.argv[1] == 'override':
-        run_command(lambda: override_parameter_limits(True, sys.argv[2:]))
-    elif sys.argv[1] == 'restore':
-        run_command(lambda: override_parameter_limits(False, sys.argv[2:]))
-    elif sys.argv[1] == 'list-watchers':
-        sys.exit(list_watchers())
-    elif sys.argv[1] == 'list-limited-parameters':
-        sys.exit(list_limited_parameters(sys.argv[2:]))
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))

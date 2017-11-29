@@ -113,9 +113,6 @@ class PyroWatcher:
                 and any(param.has_limits for param in self._parameters):
             measurement_status = ParameterStatus.Unsafe
 
-        if all(param.disabled for param in self._parameters):
-            measurement_status = ParameterStatus.Disabled
-
         status = measurement_status
         for param in self._parameters:
             param_value = param.aggregate(measurements_in_window)
@@ -131,20 +128,6 @@ class PyroWatcher:
             'measurement_status': measurement_status,
             'data': data
         }
-
-    def override_limits(self, parameter, disabled):
-        """Disable or re-enable limit checks on a named parameter.
-           If parameter is None, then acts on all parameters on this watcher"""
-        success = False
-        for param in self._parameters:
-            if (parameter is None or param.name == parameter) and param.has_limits:
-                param.override_limit(disabled)
-                success = True
-        return success
-
-    def parameters_with_limits(self):
-        """Return a list of the parameter names that have limits"""
-        return [param.name for param in self._parameters if param.has_limits]
 
     def clear_history(self):
         """Clear the cached measurements"""

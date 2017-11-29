@@ -3,26 +3,7 @@ _environment()
     local cur opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-    opts="status json restore override"
-
-    case "${prev}" in
-        restore)
-            # Fall through (bash >= 4 syntax)
-            ;&
-        override)
-            local watchers=$(environment list-watchers)
-            COMPREPLY=($(compgen -W "${watchers}" -- ${cur}))
-            return 0
-            ;;
-        *)
-            local params=$(environment list-limited-parameters ${prev})
-            if [ -n "${params}" ]; then
-                COMPREPLY=($(compgen -W "${params}" -- ${cur}))
-                return 0
-            fi
-            ;;
-    esac
+    opts="status json"
 
     COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
     return 0

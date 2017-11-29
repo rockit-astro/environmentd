@@ -30,10 +30,6 @@ class CommandStatus:
     _messages = {
         # General error codes
         10: 'error: command not accepted from this IP',
-
-        11: 'error: invalid watcher name',
-        12: 'error: invalid parameter name',
-
         -100: 'error: terminated by user',
         -101: 'error: unable to communicate with environment daemon'
     }
@@ -47,4 +43,4 @@ class CommandStatus:
 
 class ParameterStatus:
     """Status of a measurement parameter"""
-    Unsafe, Safe, Disabled = range(3)
+    Unsafe, Safe = range(2)

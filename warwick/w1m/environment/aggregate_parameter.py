@@ -31,7 +31,6 @@ class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
     def __init__(self, name, behaviour, limits=None, valid_set_values=None, measurement_name=None):
         self.name = name
-        self.disabled = False
         self._behaviour = behaviour
         self._limits = limits
         self._valid_set_values = valid_set_values
@@ -40,7 +39,7 @@ class AggregateParameter:
         self._measurement_name = measurement_name if measurement_name is not None else name
 
     def __has_limits(self):
-        """Returns true if this parameter has limits that can be disabled"""
+        """Returns true if this parameter has limits"""
         if self._behaviour == AggregateBehaviour.Set:
             return self._valid_set_values is not None
 
@@ -50,20 +49,10 @@ class AggregateParameter:
             AggregateBehaviour.LatestWithLimits
         ]
 
-    def override_limit(self, disabled):
-        """Manually disable limit checks for this parameter.
-           Returns false if this parameter does not have limits"""
-        if not self.has_limits:
-            return False
-
-        self.disabled = disabled
-        return True
-
     def aggregate(self, measurements):
         """Status data for the web dashboard"""
-        disabled = self.disabled or not self.has_limits
         ret = {
-            'status': ParameterStatus.Disabled if disabled else ParameterStatus.Unsafe,
+            'status': ParameterStatus.Unsafe,
         }
 
         if self.has_limits:
@@ -84,14 +73,14 @@ class AggregateParameter:
                 ret['max'] = max(value, ret['max'])
                 ret['latest'] = value
 
-            if not disabled and ret['min'] >= self._limits[0] and ret['max'] <= self._limits[1]:
+            if ret['min'] >= self._limits[0] and ret['max'] <= self._limits[1]:
                 ret['status'] = ParameterStatus.Safe
 
         elif self._behaviour == AggregateBehaviour.MedianWithLimits or \
                 self._behaviour == AggregateBehaviour.Median:
 
             ret['latest'] = statistics.median([m[self._measurement_name] for m in measurements])
-            if not disabled and ret['latest'] >= self._limits[0] \
+            if ret['latest'] >= self._limits[0] \
                     and ret['latest'] <= self._limits[1]:
                 ret['status'] = ParameterStatus.Safe
 
@@ -105,7 +94,7 @@ class AggregateParameter:
             ret['values'] = list(values)
 
             # If all values are valid the set difference against _valid_set_values will be empty
-            if not disabled and not values - self._valid_set_values:
+            if not values - self._valid_set_values:
                 ret['status'] = ParameterStatus.Safe
 
             if self._valid_set_values:
@@ -115,7 +104,7 @@ class AggregateParameter:
             latest = measurements[-1][self._measurement_name]
             ret['latest'] = latest
 
-            if not disabled and latest >= self._limits[0] and latest <= self._limits[1]:
+            if latest >= self._limits[0] and latest <= self._limits[1]:
                 ret['status'] = ParameterStatus.Safe
 
         return ret
