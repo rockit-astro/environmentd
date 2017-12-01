@@ -51,7 +51,6 @@ CONTROL_IPS = [IP.OneMetreDome, IP.OneMetreTCS]
 # nominal values before we consider it safe to open the dome.  This also applies
 # to the initial startup, while we wait to build sufficient history.
 CONDITION_WINDOW_LENGTH = datetime.timedelta(minutes=20)
-DISKSPACE_WINDOW_LENGTH = datetime.timedelta(minutes=2)
 
 # Maximum gap that we will accept between measurements (due to query failures,
 # etc). If this is exceeded, then we will force the dome to close until the
@@ -83,6 +82,17 @@ VAISALA_PARAMETERS = [
     FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
 ]
 
+GOTO_VAISALA_PARAMETERS = [
+    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    FilterInvalidAggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
+                                    measurement_name='wind_speed'),
+    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50)),
+    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75)),
+    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range, limits=(600, 1100)),
+    FilterInvalidAggregateParameter('accumulated_rain', AggregateBehaviour.Range, limits=(0, 0)),
+    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
+]
+
 ROOMALERT_PARAMETERS = [
     AggregateParameter('internal_temp', AggregateBehaviour.Range, limits=(0, 50)),
     AggregateParameter('internal_humidity', AggregateBehaviour.Range, limits=(0, 75)),
@@ -91,12 +101,15 @@ ROOMALERT_PARAMETERS = [
     AggregateParameter('truss_temp', AggregateBehaviour.Range),
     AggregateParameter('hatch_closed', AggregateBehaviour.Set),
     AggregateParameter('trap_closed', AggregateBehaviour.Set),
-    AggregateParameter('security_system_safe', AggregateBehaviour.Set,
-                       valid_set_values=set([True])),
+    AggregateParameter('security_system_safe', AggregateBehaviour.Latest, limits=(1, 1)),
 ]
 
 SUPERWASP_PARAMETERS = [
+    AggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    AggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
+                       measurement_name='wind_speed'),
     AggregateParameter('sky_temp', AggregateBehaviour.Range),
+    AggregateParameter('ext_temperature', AggregateBehaviour.Range, limits=(0, 50)),
     AggregateParameter('ext_humidity', AggregateBehaviour.Range, limits=(0, 75)),
     AggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
 ]
@@ -135,6 +148,8 @@ class EnvironmentDaemon:
         self._watchers = [
             PyroWatcher('vaisala', daemons.onemetre_vaisala, VAISALA_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, VAISALA_PARAMETERS),
+            PyroWatcher('goto_vaisala', daemons.goto_vaisala, VAISALA_QUERY_DELAY,
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, GOTO_VAISALA_PARAMETERS),
             PyroWatcher('roomalert', daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
                         TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, ROOMALERT_PARAMETERS),
             PyroWatcher('superwasp', daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
@@ -143,7 +158,7 @@ class EnvironmentDaemon:
                         CONDITION_WINDOW_LENGTH, TNG_PARAMETERS),
             PyroWatcher('diskspace', daemons.onemetre_tcs_diskspace,
                         DISKSPACE_QUERY_DELAY, DISKSPACE_TIME_GAP_MAX,
-                        DISKSPACE_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
+                        CONDITION_WINDOW_LENGTH, DISKSPACE_PARAMETERS),
             PyroWatcher('netping', daemons.observatory_network_ping,
                         NETPING_QUERY_DELAY, NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH,
                         NETPING_PARAMETERS),

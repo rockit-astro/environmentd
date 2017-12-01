@@ -92,6 +92,7 @@ def print_status():
         print('No data available')
     else:
         print_vaisala_status('W1m Vaisala', data['vaisala'])
+        print_vaisala_status('GOTO Vaisala', data['goto_vaisala'])
         print_roomalert_status(data['roomalert'])
         print_superwasp_status(data['superwasp'])
         print_tng_status(data['tng'])
