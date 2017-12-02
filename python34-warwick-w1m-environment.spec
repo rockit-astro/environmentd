@@ -13,7 +13,7 @@
 # published by the Open Source Initiative.
 
 Name:           python34-warwick-w1m-environment
-Version:        3.0.2
+Version:        3.0.3
 Release:        0
 License:        GPL3
 Summary:        Common backend code for the Warwick one-metre telescope environment daemon

@@ -77,6 +77,7 @@ class SunMoonWatcher:
                 'date_count': 1,
                 'latest': sun.alt.value,
                 'limits': [-90, SUN_ELEVATION_LIMIT],
+                'warn_limits': [-90, SUN_ELEVATION_WARNING],
                 'unsafe': sun.alt.value >= SUN_ELEVATION_LIMIT,
                 'warning': sun.alt.value >= SUN_ELEVATION_WARNING,
             },
