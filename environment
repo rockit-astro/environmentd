@@ -212,11 +212,16 @@ def format_date(data):
         ret += FMT_RED + 'NO DATA' + FMT_CLEAR
     return ret
 
-def format_value(value, limits, fmt='.1f'):
+def format_value(value, limits, warn_limits, fmt='.1f'):
     """Builds a formatted string colored based on the specified limits"""
     color = FMT_BOLD
-    if limits:
-        color += FMT_RED if value < limits[0] or value > limits[1] else FMT_GREEN
+    if limits or warn_limits:
+        if limits and (value < limits[0] or value > limits[1]):
+            color += FMT_RED
+        elif warn_limits and (value < warn_limits[0] or value > warn_limits[1]):
+            color += FMT_YELLOW
+        else:
+            color += FMT_GREEN
     return color +  ('{0' + fmt +'}').format(value) + FMT_CLEAR
 
 def format_measurement(data, suffix='', fmt='.1f'):
@@ -226,22 +231,25 @@ def format_measurement(data, suffix='', fmt='.1f'):
 
     ret = ''
     limits = data['limits'] if 'limits' in data else None
+    warn_limits = data['warn_limits'] if 'warn_limits' in data else None
     if 'min' in data:
-        ret += format_value(data['min'], limits, fmt) + ' \u2264 '
+        ret += format_value(data['min'], limits, warn_limits, fmt) + ' \u2264 '
 
     if data['current']:
-        ret += format_value(data['latest'], limits, fmt)
+        ret += format_value(data['latest'], limits, warn_limits, fmt)
     else:
         ret += FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
     if 'max' in data:
-        ret += ' \u2264 ' + format_value(data['max'], limits, fmt)
+        ret += ' \u2264 ' + format_value(data['max'], limits, warn_limits, fmt)
 
     if data['current'] or 'max' in data:
         ret += suffix
 
     if data['unsafe']:
         ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
+    elif data['warning']:
+        ret += FMT_RED + FMT_YELLOW + ' (WARNING)' + FMT_CLEAR
 
     return ret
 
@@ -260,6 +268,8 @@ def format_set(data, values):
 
     if data['unsafe']:
         ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
+    elif data['warning']:
+        ret += FMT_RED + FMT_YELLOW + ' (WARNING)' + FMT_CLEAR
 
     return ret
 
@@ -268,7 +278,8 @@ def format_ups(data, prefix):
     battery_data = data[prefix + '_battery_remaining']
 
     if battery_data['current']:
-        battery = format_value(battery_data['latest'], battery_data['limits'], fmt='') + '%'
+        battery = format_value(battery_data['latest'], battery_data['limits'],
+                               battery_data['warn_limits'], fmt='') + '%'
     else:
         battery = FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 

@@ -74,30 +74,40 @@ NETPING_QUERY_DELAY = 30
 
 # Safe operating ranges. Dome will be closed if these parameters aren't met
 VAISALA_PARAMETERS = [
-    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40),
+                                    warn_limits=(0, 30)),
     FilterInvalidAggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
-                                    measurement_name='wind_speed'),
-    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50)),
-    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75)),
-    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range, limits=(600, 1100)),
+                                    warn_limits=(0, 15), measurement_name='wind_speed'),
+    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50),
+                                    warn_limits=(3, 30)),
+    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75),
+                                    warn_limits=(0, 50)),
+    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range),
     FilterInvalidAggregateParameter('accumulated_rain', AggregateBehaviour.Range, limits=(0, 0)),
-    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
+    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100),
+                                    warn_limits=(10, 100)),
 ]
 
 GOTO_VAISALA_PARAMETERS = [
-    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    FilterInvalidAggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40),
+                                    warn_limits=(0, 30)),
     FilterInvalidAggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
-                                    measurement_name='wind_speed'),
-    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50)),
-    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75)),
-    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range, limits=(600, 1100)),
+                                    warn_limits=(0, 15), measurement_name='wind_speed'),
+    FilterInvalidAggregateParameter('temperature', AggregateBehaviour.Range, limits=(0, 50),
+                                    warn_limits=(3, 30)),
+    FilterInvalidAggregateParameter('relative_humidity', AggregateBehaviour.Range, limits=(0, 75),
+                                    warn_limits=(0, 50)),
+    FilterInvalidAggregateParameter('pressure', AggregateBehaviour.Range),
     FilterInvalidAggregateParameter('accumulated_rain', AggregateBehaviour.Range, limits=(0, 0)),
-    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
+    FilterInvalidAggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100),
+                                    warn_limits=(10, 100)),
 ]
 
 ROOMALERT_PARAMETERS = [
-    AggregateParameter('internal_temp', AggregateBehaviour.Range, limits=(0, 50)),
-    AggregateParameter('internal_humidity', AggregateBehaviour.Range, limits=(0, 75)),
+    AggregateParameter('internal_temp', AggregateBehaviour.Range, limits=(0, 50),
+                       warn_limits=(3, 30)),
+    AggregateParameter('internal_humidity', AggregateBehaviour.Range, limits=(0, 75),
+                       warn_limits=(0, 50)),
     AggregateParameter('roomalert_temp', AggregateBehaviour.Range),
     AggregateParameter('roomalert_humidity', AggregateBehaviour.Range),
     AggregateParameter('truss_temp', AggregateBehaviour.Range),
@@ -107,13 +117,16 @@ ROOMALERT_PARAMETERS = [
 ]
 
 SUPERWASP_PARAMETERS = [
-    AggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40)),
+    AggregateParameter('wind_speed', AggregateBehaviour.Range, limits=(0, 40), warn_limits=(0, 30)),
     AggregateParameter('median_wind_speed', AggregateBehaviour.Median, limits=(0, 25),
-                       measurement_name='wind_speed'),
+                       warn_limits=(0, 15), measurement_name='wind_speed'),
     AggregateParameter('sky_temp', AggregateBehaviour.Range),
-    AggregateParameter('ext_temperature', AggregateBehaviour.Range, limits=(0, 50)),
-    AggregateParameter('ext_humidity', AggregateBehaviour.Range, limits=(0, 75)),
-    AggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100)),
+    AggregateParameter('ext_temperature', AggregateBehaviour.Range, limits=(0, 50),
+                       warn_limits=(3, 30)),
+    AggregateParameter('ext_humidity', AggregateBehaviour.Range, limits=(0, 75),
+                       warn_limits=(0, 50)),
+    AggregateParameter('dew_point_delta', AggregateBehaviour.Range, limits=(2, 100),
+                       warn_limits=(10, 100)),
 ]
 
 TNG_PARAMETERS = [
@@ -124,8 +137,9 @@ TNG_PARAMETERS = [
 
 DISKSPACE_PARAMETERS = [
     AggregateParameter('data_fs_available_bytes', AggregateBehaviour.Latest,
-                       limits=(5 * 2**30, 2**40)),
-    AggregateParameter('data_fs_percent_available', AggregateBehaviour.Latest, limits=(5, 100)),
+                       limits=(5 * 2**30, 2**40), warn_limits=(10 * 2**30, 2**40)),
+    AggregateParameter('data_fs_percent_available', AggregateBehaviour.Latest, limits=(5, 100),
+                       warn_limits=(10, 100)),
 ]
 
 NETPING_PARAMETERS = [
@@ -136,10 +150,12 @@ NETPING_PARAMETERS = [
 POWER_PARAMETERS = [
     AggregateParameter('main_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
     AggregateParameter('main_ups_battery_healthy', AggregateBehaviour.Set),
-    AggregateParameter('main_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101)),
+    AggregateParameter('main_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101),
+                       warn_limits=(99, 101)),
     AggregateParameter('dome_ups_status', AggregateBehaviour.Set, valid_set_values=set([2])),
     AggregateParameter('dome_ups_battery_healthy', AggregateBehaviour.Set),
-    AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101)),
+    AggregateParameter('dome_ups_battery_remaining', AggregateBehaviour.Range, limits=(85, 101),
+                       warn_limits=(99, 101)),
     AggregateParameter('light', AggregateBehaviour.Set),
 ]
 

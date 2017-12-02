@@ -19,6 +19,7 @@
 
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-branches
 
 import datetime
 import statistics
@@ -29,10 +30,12 @@ class AggregateBehaviour:
 
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
-    def __init__(self, name, behaviour, limits=None, valid_set_values=None, measurement_name=None):
+    def __init__(self, name, behaviour, limits=None, warn_limits=None, valid_set_values=None,
+                 measurement_name=None):
         self.name = name
         self._behaviour = behaviour
         self._limits = limits
+        self._warn_limits = warn_limits
         self._valid_set_values = valid_set_values
         self._measurement_name = measurement_name if measurement_name is not None else name
 
@@ -42,19 +45,21 @@ class AggregateParameter:
 
         Returns a dictionary of values:
            unsafe: True if at least one measurement within the window was outside the defined limits
+           warning: True if at least one measurement within the window was in the warning limits
            current: True if the latest measurement was more recent than the stale data threshold
            latest: Latest value for this parameter
            date_start: Date of first measurement aggregated
            date_end: Date of last measurement aggregated
            date_count: Number of measurements aggregated
            limits (optional): Tuple of min and max safe values if defined for this parameter
+           warn_limits (optional): Tuple of min and max safe values if defined for this parameter
            min (optional): Minimum aggregated value for Range parameters
            max (optional): Maximum aggregated value for Range parameters
            values (optional): Values seen during the aggregation period for Set parameters
            valid_values (optional): Values that don't trigger an unsafe condition for Set parameters
 
-        Note that unsafe will be FALSE if there is no data for this measurement, so always check
-        current and/or date_count before trying to interpret that flag
+        Note that unsafe and warning will be FALSE if there is no data for this measurement,
+        so always check current and/or date_count before trying to interpret that flag
         """
 
         measurement_start = measurements[0]['date'] if measurements else datetime.datetime.min
@@ -62,6 +67,7 @@ class AggregateParameter:
 
         ret = {
             'unsafe': False,
+            'warning': False,
             'current': measurement_end >= stale_measurement_threshold,
             'date_start': measurement_start.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'date_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
@@ -70,6 +76,9 @@ class AggregateParameter:
 
         if self._limits:
             ret['limits'] = self._limits
+
+        if self._warn_limits:
+            ret['warn_limits'] = self._warn_limits
 
         if not measurements:
             return ret
@@ -85,10 +94,18 @@ class AggregateParameter:
             if self._limits:
                 ret['unsafe'] = ret['min'] < self._limits[0] or ret['max'] > self._limits[1]
 
+            if self._warn_limits:
+                ret['warning'] = ret['min'] < self._warn_limits[0] \
+                    or ret['max'] > self._warn_limits[1]
+
         elif self._behaviour == AggregateBehaviour.Median:
             ret['latest'] = statistics.median([m[self._measurement_name] for m in measurements])
             if self._limits:
                 ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
+
+            if self._warn_limits:
+                ret['warning'] = ret['latest'] < self._warn_limits[0] \
+                    or ret['latest'] > self._warn_limits[1]
 
         elif self._behaviour == AggregateBehaviour.Set:
             ret['latest'] = measurements[-1][self._measurement_name]
@@ -103,13 +120,17 @@ class AggregateParameter:
                 ret['valid_values'] = list(self._valid_set_values)
 
                 # If all values are valid the set difference against _valid_set_values will be empty
-                ret['unsafe'] = bool(values - self._valid_set_values)
+                ret['unsafe'] = ret['warning'] = bool(values - self._valid_set_values)
 
         else:
             ret['latest'] = measurements[-1][self._measurement_name]
 
             if self._limits and ret['current']:
                 ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
+
+            if self._warn_limits and ret['current']:
+                ret['warning'] = ret['latest'] < self._warn_limits[0] \
+                    or ret['latest'] > self._warn_limits[1]
 
         return ret
 

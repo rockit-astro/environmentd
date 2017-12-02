@@ -37,6 +37,7 @@ SITE_LONGITUDE = -17.8796168
 SITE_ELEVATION = 2387
 
 SUN_ELEVATION_LIMIT = -2
+SUN_ELEVATION_WARNING = -10
 
 class SunMoonWatcher:
     """Calculates sun and moon data"""
@@ -76,7 +77,8 @@ class SunMoonWatcher:
                 'date_count': 1,
                 'latest': sun.alt.value,
                 'limits': [-90, SUN_ELEVATION_LIMIT],
-                'unsafe': sun.alt.value >= SUN_ELEVATION_LIMIT
+                'unsafe': sun.alt.value >= SUN_ELEVATION_LIMIT,
+                'warning': sun.alt.value >= SUN_ELEVATION_WARNING,
             },
 
             'moon_phase': {
@@ -85,7 +87,8 @@ class SunMoonWatcher:
                 'date_end': now_str,
                 'date_count': 1,
                 'latest': moon.phase,
-                'unsafe': False
+                'unsafe': False,
+                'warning': False
             },
 
             'moon_alt': {
@@ -94,7 +97,8 @@ class SunMoonWatcher:
                 'date_end': now_str,
                 'date_count': 1,
                 'latest': moon.alt/ephem.degree,
-                'unsafe': False
+                'unsafe': False,
+                'warning': False
             }
         }
 
