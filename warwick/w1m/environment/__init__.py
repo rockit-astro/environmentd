@@ -18,6 +18,7 @@
 """environmentd common code"""
 
 from .pyro_watcher import PyroWatcher
+from .sun_moon_watcher import SunMoonWatcher
 from .aggregate_parameter import (
     AggregateParameter,
     AggregateBehaviour,

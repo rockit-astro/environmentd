@@ -99,6 +99,7 @@ def print_status():
         print_power_status(data['power'])
         print_network_status(data['netping'])
         print_diskspace_status(data['diskspace'])
+        print_ephem_status(data['ephem'])
 
     return 0
 
@@ -161,6 +162,14 @@ def print_diskspace_status(data):
     print('Disk space from ' + format_date(data))
     print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
                                                    data['data_fs_percent_available']))
+    print()
+
+def print_ephem_status(data):
+    """Prints sun/moon status"""
+    print('Ephemeris from ' + format_date(data))
+    print('     Sun Altitude: ' + format_measurement(data['sun_alt'], '\u00B0'))
+    print('    Moon Altitude: ' + format_measurement(data['moon_alt'], '\u00B0'))
+    print('       Moon Phase: ' + format_measurement(data['moon_phase'], '%'))
 
 def print_json():
     """Prints the latest environment data in machine-readable form"""

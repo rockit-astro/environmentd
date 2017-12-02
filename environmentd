@@ -36,6 +36,7 @@ from warwick.observatory.common import (
 from warwick.observatory.common.helpers import pyro_client_matches
 from warwick.w1m.environment import (
     PyroWatcher,
+    SunMoonWatcher,
     AggregateParameter,
     FilterInvalidAggregateParameter,
     AggregateBehaviour,
@@ -164,7 +165,8 @@ class EnvironmentDaemon:
                         NETPING_QUERY_DELAY, NETPING_TIME_GAP_MAX, CONDITION_WINDOW_LENGTH,
                         NETPING_PARAMETERS),
             PyroWatcher('power', daemons.onemetre_power, POWER_QUERY_DELAY,
-                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, POWER_PARAMETERS)
+                        TIME_GAP_MAX, CONDITION_WINDOW_LENGTH, POWER_PARAMETERS),
+            SunMoonWatcher('ephem')
         ]
 
     @Pyro4.expose
