@@ -31,12 +31,13 @@ class AggregateBehaviour:
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
     def __init__(self, name, behaviour, limits=None, warn_limits=None, valid_set_values=None,
-                 measurement_name=None):
+                 measurement_name=None, ignore_values=None):
         self.name = name
         self._behaviour = behaviour
         self._limits = limits
         self._warn_limits = warn_limits
         self._valid_set_values = valid_set_values
+        self._ignore_values = ignore_values
         self._measurement_name = measurement_name if measurement_name is not None else name
 
     def aggregate(self, measurements, stale_measurement_threshold):
@@ -61,6 +62,12 @@ class AggregateParameter:
         Note that unsafe and warning will be FALSE if there is no data for this measurement,
         so always check current and/or date_count before trying to interpret that flag
         """
+
+        # Discard any measurements that are flagged as ignored
+        # This allows "no value" measurements to be not counted as bad
+        if self._ignore_values:
+            measurements = [m for m in measurements \
+                if m[self._measurement_name] not in self._ignore_values]
 
         measurement_start = measurements[0]['date'] if measurements else datetime.datetime.min
         measurement_end = measurements[-1]['date'] if measurements else datetime.datetime.min

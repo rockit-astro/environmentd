@@ -143,8 +143,8 @@ DISKSPACE_PARAMETERS = [
 ]
 
 NETPING_PARAMETERS = [
-    AggregateParameter('google', AggregateBehaviour.Range, limits=(0, 2000)),
-    AggregateParameter('ngtshead', AggregateBehaviour.Range, limits=(0, 2000)),
+    AggregateParameter('google', AggregateBehaviour.Range, ignore_values=[-1], limits=(0, 2000)),
+    AggregateParameter('ngtshead', AggregateBehaviour.Range, ignore_values=[-1], limits=(0, 2000)),
 ]
 
 POWER_PARAMETERS = [
