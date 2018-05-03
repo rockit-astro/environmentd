@@ -22,6 +22,8 @@ script:
  # Set the spec Revision field to <latest in repo> + 1
  - deploy/repository/set-spec-release.sh onemetre-environment-server.spec
  - deploy/repository/set-spec-release.sh onemetre-environment-client.spec
+ - deploy/repository/set-spec-release.sh rasa-environment-server.spec
+ - deploy/repository/set-spec-release.sh rasa-environment-client.spec
  - deploy/repository/set-spec-release.sh python34-warwick-observatory-environment.spec
  # Compile rpm packages by running `make` in a centos7 container
  - docker run --rm=true -e "USERID=${UID}" -v `pwd`:/src:rw centos:centos7 /bin/sh -c "cd src && deploy/make-on-centos7.sh"

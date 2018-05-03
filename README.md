@@ -1,6 +1,6 @@
-## W1m environment aggregation daemon [![Travis CI build status](https://travis-ci.org/warwick-one-metre/environmentd.svg?branch=master)](https://travis-ci.org/warwick-one-metre/environmentd)
+## Environment aggregation daemon [![Travis CI build status](https://travis-ci.org/warwick-one-metre/environmentd.svg?branch=master)](https://travis-ci.org/warwick-one-metre/environmentd)
 
-Part of the observatory software for the Warwick one-meter telescope.
+Part of the observatory software for the Warwick one-meter and RASA prototype telescopes.
 
 `environmentd` aggregates the status of the lower level enviroment daemons over a specified time interval and determines whether it is safe to observe.
 
@@ -8,7 +8,7 @@ Part of the observatory software for the Warwick one-meter telescope.
 
 `python34-warwick-observatory-environment` is a python module with the common environment code.
 
-### Software Setup
+### Software Setup (W1m)
 
 After installation, the `onemetre-environment-server` must be enabled using:
 ```
@@ -23,5 +23,23 @@ sudo systemctl start enivironmentd.service
 Finally, open a port in the firewall so that other machines on the network can access the daemon:
 ```
 sudo firewall-cmd --zone=public --add-port=9002/tcp --permanent
+sudo firewall-cmd --reload
+```
+
+### Software Setup (RASA)
+
+After installation, the `rasa-environment-server` must be enabled using:
+```
+sudo systemctl enable rasa-enivironmentd.service
+```
+
+The service will automatically start on system boot, or you can start it immediately using:
+```
+sudo systemctl start rasa-enivironmentd.service
+```
+
+Finally, open a port in the firewall so that other machines on the network can access the daemon:
+```
+sudo firewall-cmd --zone=public --add-port=9031/tcp --permanent
 sudo firewall-cmd --reload
 ```

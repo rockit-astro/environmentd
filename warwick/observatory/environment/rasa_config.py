@@ -18,21 +18,17 @@
 """Configuration for the W1m's Enviroment daemon"""
 
 # pylint: disable=too-few-public-methods
-
 import datetime
 from warwick.observatory.common import daemons, IP
 from . import (
     PyroWatcher,
     SunMoonWatcher)
-
 from .parameters import (
     vaisala_parameters,
-    onemetre_roomalert_parameters,
     superwasp_parameters,
     tng_parameters,
     diskspace_parameters,
-    netping_parameters,
-    onemetre_power_parameters)
+    netping_parameters)
 
 # Delay (in seconds) that we must wait after weather conditions return to
 # nominal values before we consider it safe to open the dome.  This also applies
@@ -51,10 +47,8 @@ SUPERWASP_TIME_GAP_MAX = datetime.timedelta(seconds=60)
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
-ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
 TNG_QUERY_DELAY = 300
-POWER_QUERY_DELAY = 10
 DISKSPACE_QUERY_DELAY = 30
 NETPING_QUERY_DELAY = 30
 
@@ -72,16 +66,6 @@ VAISALA_WARN_LIMITS = {
     'temperature': (3, 30),
     'relative_humidity': (0, 50),
     'dew_point_delta': (10, 100)
-}
-
-ROOMALERT_LIMITS = {
-    'internal_temp': (0, 50),
-    'internal_humidity': (0, 75),
-    'security_system_safe': (1, 1)
-}
-ROOMALERT_WARN_LIMITS = {
-    'internal_temp': (3, 30),
-    'internal_humidity': (0, 50)
 }
 
 SUPERWASP_LIMITS = {
@@ -113,19 +97,10 @@ NETPING_LIMITS = {
     'ngtshead': (0, 2000),
 }
 
-POWER_LIMITS = {
-    'main_ups_battery_remaining': (85, 101),
-    'dome_ups_battery_remaining': (85, 101)
-}
-POWER_WARN_LIMITS = {
-    'main_ups_battery_remaining': (99, 101),
-    'dome_ups_battery_remaining': (99, 101)
-}
-
-class OneMetreConfig:
-    """Configuration for the W1m's Enviroment daemon"""
-    daemon = daemons.onemetre_environment
-    control_ips = [IP.OneMetreDome, IP.OneMetreTCS]
+class RASAConfig:
+    """Configuration for the RASA prototype's Enviroment daemon"""
+    daemon = daemons.rasa_environment
+    control_ips = [IP.RASAMain]
 
     def get_watchers():
         """Returns a list of PyroWatchers to be monitored"""
@@ -136,10 +111,6 @@ class OneMetreConfig:
             PyroWatcher('goto_vaisala', daemons.goto_vaisala, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
                         WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS)),
 
-            PyroWatcher('roomalert', daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
-                        TIME_GAP_MAX, WINDOW_LENGTH,
-                        onemetre_roomalert_parameters(ROOMALERT_LIMITS, ROOMALERT_WARN_LIMITS)),
-
             PyroWatcher('superwasp', daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
                         SUPERWASP_TIME_GAP_MAX, WINDOW_LENGTH,
                         superwasp_parameters(SUPERWASP_LIMITS, SUPERWASP_WARN_LIMITS)),
@@ -147,15 +118,12 @@ class OneMetreConfig:
             PyroWatcher('tng', daemons.tng_log, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
                         WINDOW_LENGTH, tng_parameters()),
 
-            PyroWatcher('diskspace', daemons.onemetre_tcs_diskspace, DISKSPACE_QUERY_DELAY,
+            PyroWatcher('diskspace', daemons.rasa_diskspace, DISKSPACE_QUERY_DELAY,
                         DISKSPACE_TIME_GAP_MAX, WINDOW_LENGTH,
                         diskspace_parameters(DISKSPACE_LIMITS, DISKSPACE_WARN_LIMITS)),
 
             PyroWatcher('netping', daemons.observatory_network_ping, NETPING_QUERY_DELAY,
                         NETPING_TIME_GAP_MAX, WINDOW_LENGTH, netping_parameters(NETPING_LIMITS)),
-
-            PyroWatcher('power', daemons.onemetre_power, POWER_QUERY_DELAY, TIME_GAP_MAX,
-                        WINDOW_LENGTH, onemetre_power_parameters(POWER_LIMITS, POWER_WARN_LIMITS)),
 
             SunMoonWatcher('ephem')
         ]

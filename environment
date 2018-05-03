@@ -29,7 +29,11 @@ import os
 import sys
 import Pyro4
 from warwick.observatory.common import daemons
-from warwick.observatory.environment import CommandStatus
+
+DAEMONS = {
+    'onemetre': daemons.onemetre_environment,
+    'rasa': daemons.rasa_environment
+}
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
@@ -65,24 +69,10 @@ SECSYS_STATUS = {
     True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
 }
 
-def run_command(command):
-    """Prints the message associated with a status code and returns the code"""
-    try:
-        ret = command()
-    except KeyboardInterrupt:
-        ret = -100
-    except Pyro4.errors.CommunicationError:
-        ret = -101
-
-    # Print message associated with error codes, except for -1 (error handled locally)
-    if ret != -1 and ret != 0:
-        print(CommandStatus.message(ret))
-    sys.exit(ret)
-
-def print_status():
+def print_status(telescope, daemon):
     """Prints the latest environment data in human-readable form"""
     try:
-        with daemons.onemetre_environment.connect() as environment:
+        with daemon.connect() as environment:
             data = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -91,20 +81,23 @@ def print_status():
     if data is None:
         print('No data available')
     else:
-        print_vaisala_status('W1m Vaisala', data['vaisala'])
-        print_vaisala_status('GOTO Vaisala', data['goto_vaisala'])
-        print_roomalert_status(data['roomalert'])
-        print_superwasp_status(data['superwasp'])
-        print_tng_status(data['tng'])
-        print_power_status(data['power'])
-        print_network_status(data['netping'])
-        print_diskspace_status(data['diskspace'])
-        print_ephem_status(data['ephem'])
+        print_vaisala_status('W1m Vaisala', data.get('vaisala'))
+        print_vaisala_status('GOTO Vaisala', data.get('goto_vaisala'))
+        print_roomalert_status(data.get('roomalert'))
+        print_superwasp_status(data.get('superwasp'))
+        print_tng_status(data.get('tng'))
+        print_power_status(data.get('power'))
+        print_network_status(data.get('netping'))
+        print_diskspace_status(data.get('diskspace'))
+        print_ephem_status(data.get('ephem'))
 
     return 0
 
 def print_vaisala_status(name, data):
     """Prints data from one of the Vaisala units"""
+    if data is None:
+        return
+
     print(name + ' data from ' + format_date(data))
     print('             Wind: ' + format_measurement(data['wind_speed'], ' km/h'))
     print('      Median Wind: ' + format_measurement(data['median_wind_speed'], ' km/h'))
@@ -117,6 +110,9 @@ def print_vaisala_status(name, data):
 
 def print_roomalert_status(data):
     """Prints data from the W1m Room Alert"""
+    if data is None:
+        return
+
     print('Room Alert data from ' + format_date(data))
     print('   Internal Temp.: ' + format_measurement(data['internal_temp'], '\u00B0C'))
     print('    Internal Hum.: ' + format_measurement(data['internal_humidity'], ' %RH'))
@@ -130,6 +126,9 @@ def print_roomalert_status(data):
 
 def print_superwasp_status(data):
     """Prints data from the SuperWASP weather log"""
+    if data is None:
+        return
+
     print('SuperWASP data from ' + format_date(data))
     print('     Outside Hum.: ' + format_measurement(data['ext_humidity'], ' %RH'))
     print('        Sky Temp.: ' + format_measurement(data['sky_temp'], '\u00B0C'))
@@ -138,6 +137,9 @@ def print_superwasp_status(data):
 
 def print_tng_status(data):
     """Prints data from the TNG weather log"""
+    if data is None:
+        return
+
     print('TNG data from ' + format_date(data))
     print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
     print('           Seeing: ' + format_measurement(data['seeing'], '"'))
@@ -145,6 +147,9 @@ def print_tng_status(data):
 
 def print_power_status(data):
     """Prints data from the W1m UPSes"""
+    if data is None:
+        return
+
     print('UPS data from ' + format_date(data))
     print('         Main UPS: ' + format_ups(data, 'main_ups'))
     print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
@@ -152,6 +157,9 @@ def print_power_status(data):
 
 def print_network_status(data):
     """Prints data from the network ping monitor"""
+    if data is None:
+        return
+
     print('Network ping data from ' + format_date(data))
     print('           Google: ' + format_measurement(data['google'], ' ms'))
     print('         NGTSHead: ' + format_measurement(data['ngtshead'], ' ms'))
@@ -159,6 +167,9 @@ def print_network_status(data):
 
 def print_diskspace_status(data):
     """Prints data from the W1m TCS disk space monitor"""
+    if data is None:
+        return
+
     print('Disk space from ' + format_date(data))
     print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
                                                    data['data_fs_percent_available']))
@@ -166,16 +177,19 @@ def print_diskspace_status(data):
 
 def print_ephem_status(data):
     """Prints sun/moon status"""
+    if data is None:
+        return
+
     print('Ephemeris from ' + format_date(data))
     print('     Sun Altitude: ' + format_measurement(data['sun_alt'], '\u00B0'))
     print('    Moon Altitude: ' + format_measurement(data['moon_alt'], '\u00B0'))
     print('       Moon Phase: ' + format_measurement(data['moon_phase'], '%'))
 
-def print_json():
+def print_json(daemon):
     """Prints the latest environment data in machine-readable form"""
     status = None
     try:
-        with daemons.onemetre_environment.connect() as environment:
+        with daemon.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -310,7 +324,7 @@ def format_diskspace(raw, percent):
 
 def print_usage(name):
     """Prints the utility help"""
-    print('Usage: {} <command>'.format(name))
+    print('Usage: {} [onemetre|rasa] <command>'.format(name))
     print()
     print('   status      print a human-readable summary of the aggregated environment status')
     print('   json        print a machine-readable summary of the aggregated environment status')
@@ -319,13 +333,13 @@ def print_usage(name):
     return 1
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
+    if len(sys.argv) < 3 or sys.argv[1] not in DAEMONS:
         sys.exit(print_usage(SCRIPT_NAME))
 
-    if sys.argv[1] == 'status':
-        sys.exit(print_status())
-    elif sys.argv[1] == 'json':
-        sys.exit(print_json())
+    if sys.argv[2] == 'status':
+        sys.exit(print_status(sys.argv[1], DAEMONS[sys.argv[1]]))
+    elif sys.argv[2] == 'json':
+        sys.exit(print_json(DAEMONS[sys.argv[1]]))
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))

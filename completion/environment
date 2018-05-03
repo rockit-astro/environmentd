@@ -1,9 +1,19 @@
 _environment()
 {
-    local cur opts
+    compopt +o default
+    local cur prev opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    opts="status json"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    opts="onemetre rasa"
+
+    case "${prev}" in
+        onemetre|rasa)
+            opts="status json"
+            ;;
+        *)
+            ;;
+    esac
 
     COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
     return 0

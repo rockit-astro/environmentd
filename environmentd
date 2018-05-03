@@ -19,24 +19,30 @@
    status and weather conditions are aggregated over a time period, and can
    be queried to determine whether it is safe to observe."""
 
+# pylint: disable=invalid-name
+
+import argparse
 import datetime
 import sys
 import Pyro4
-from warwick.observatory.common import (
-    daemons,
-    log)
+from warwick.observatory.common import log
 from warwick.observatory.common.helpers import pyro_client_matches
-from warwick.observatory.environment import CommandStatus, OneMetreConfig
+from warwick.observatory.environment import CommandStatus, OneMetreConfig, RASAConfig
 
 # Include more detailed exceptions
 sys.excepthook = Pyro4.util.excepthook
+
+CONFIG = {
+    'onemetre': OneMetreConfig,
+    'rasa': RASAConfig
+}
 
 class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
 
     def __init__(self, config):
         self._control_ips = config.control_ips
-        self._watchers = config.watchers
+        self._watchers = config.get_watchers()
 
     @Pyro4.expose
     def status(self):
@@ -60,4 +66,8 @@ class EnvironmentDaemon:
         return CommandStatus.Success
 
 if __name__ == '__main__':
-    daemons.onemetre_environment.launch(EnvironmentDaemon(OneMetreConfig))
+    parser = argparse.ArgumentParser(description='Environment Server')
+    parser.add_argument('telescope', choices=CONFIG.keys(), help='Select a telescope')
+    args = parser.parse_args()
+    telescope = CONFIG[args.telescope]
+    telescope.daemon.launch(EnvironmentDaemon(telescope))
