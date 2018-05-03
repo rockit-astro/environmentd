@@ -1,5 +1,5 @@
 #
-# spec file for package python3-warwick-w1m-environment
+# spec file for package python3-warwick-observatory-environment
 #
 # Copyright (c) 2016 SUSE LINUX Products GmbH, Nuernberg, Germany.
 #
@@ -12,8 +12,8 @@
 # license that conforms to the Open Source Definition (Version 1.9)
 # published by the Open Source Initiative.
 
-Name:           python34-warwick-w1m-environment
-Version:        3.0.4
+Name:           python34-warwick-observatory-environment
+Version:        3.1.0
 Release:        0
 License:        GPL3
 Summary:        Common backend code for the Warwick one-metre telescope environment daemon

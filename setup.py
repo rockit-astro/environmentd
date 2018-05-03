@@ -17,9 +17,9 @@
 
 from distutils.core import setup
 
-setup(name='warwick.w1m.environment',
+setup(name='warwick.observatory.environment',
       version='0',
-      packages = ['warwick.w1m.environment'],
+      packages = ['warwick.observatory.environment'],
       author='Paul Chote',
       description='Common code for the W1m environment daemon',
       license='GNU GPLv3',

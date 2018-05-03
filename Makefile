@@ -8,7 +8,7 @@ all:
 	mkdir -p build
 	${RPMBUILD} -ba onemetre-environment-server.spec
 	${RPMBUILD} -ba onemetre-environment-client.spec
-	${RPMBUILD} -ba python34-warwick-w1m-environment.spec
+	${RPMBUILD} -ba python34-warwick-observatory-environment.spec
 	mv build/noarch/*.rpm .
 	rm -rf build
 

@@ -29,7 +29,7 @@ import os
 import sys
 import Pyro4
 from warwick.observatory.common import daemons
-from warwick.w1m.environment import CommandStatus
+from warwick.observatory.environment import CommandStatus
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook

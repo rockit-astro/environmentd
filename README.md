@@ -6,7 +6,7 @@ Part of the observatory software for the Warwick one-meter telescope.
 
 `environment` is a commandline utility that queries the environment daemon.
 
-`python34-warwick-w1m-environment` is a python module with the common environment code.
+`python34-warwick-observatory-environment` is a python module with the common environment code.
 
 ### Software Setup
 

@@ -26,7 +26,7 @@ from warwick.observatory.common import (
     daemons,
     log)
 from warwick.observatory.common.helpers import pyro_client_matches
-from warwick.w1m.environment import CommandStatus, OneMetreConfig
+from warwick.observatory.environment import CommandStatus, OneMetreConfig
 
 # Include more detailed exceptions
 sys.excepthook = Pyro4.util.excepthook

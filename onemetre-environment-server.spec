@@ -1,20 +1,13 @@
 Name:      onemetre-environment-server
-Version:   3.0.4
+Version:   3.1.0
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick one-metre telescope.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
-Requires: python34-Pyro4, python34-pyephem, python34-warwick-observatory-common, python34-warwick-w1m-environment
-Requires: observatory-log-client, %{?systemd_requires}
-%if 0%{?suse_version}
-Requires:  python3
-BuildRequires: systemd-rpm-macros
-%endif
-%if 0%{?centos_ver}
-Requires:  python34
-%endif
+Requires:  python34, python34-Pyro4, python34-pyephem, python34-warwick-observatory-common,
+Requires:  python34-warwick-observatory-environment, observatory-log-client, %{?systemd_requires}
 
 %description
 Part of the observatory software for the Warwick one-meter telescope.
