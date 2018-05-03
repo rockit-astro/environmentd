@@ -24,3 +24,4 @@ from .aggregate_parameter import (
     AggregateBehaviour,
     FilterInvalidAggregateParameter)
 from .constants import CommandStatus
+from .onemetre_config import OneMetreConfig
