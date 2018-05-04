@@ -21,36 +21,14 @@ mkdir -p %{buildroot}%{_unitdir}
 %{__install} %{_sourcedir}/environmentd %{buildroot}%{_bindir}
 %{__install} %{_sourcedir}/environmentd.service %{buildroot}%{_unitdir}
 
-%pre
-%if 0%{?suse_version}
-%service_add_pre environmentd.service
-%endif
-
 %post
-%if 0%{?suse_version}
-%service_add_post environmentd.service
-%endif
-%if 0%{?centos_ver}
 %systemd_post environmentd.service
-%endif
 
 %preun
-%if 0%{?suse_version}
-%stop_on_removal environmentd.service
-%service_del_preun environmentd.service
-%endif
-%if 0%{?centos_ver}
 %systemd_preun environmentd.service
-%endif
 
 %postun
-%if 0%{?suse_version}
-%restart_on_update environmentd.service
-%service_del_postun environmentd.service
-%endif
-%if 0%{?centos_ver}
 %systemd_postun_with_restart environmentd.service
-%endif
 
 %files
 %defattr(0755,root,root,-)
