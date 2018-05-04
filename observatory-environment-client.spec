@@ -1,15 +1,15 @@
-Name:      rasa-environment-client
+Name:      observatory-environment-client
 Version:   3.1.0
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
-Summary:   Environment client for the RASA prototype telescope.
+Summary:   Environment client for the Warwick one-metre telescope.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
 Requires:  python34, python34-Pyro4, python34-warwick-observatory-common, python34-warwick-observatory-environment
 
 %description
-Part of the observatory software for the RASA prototype telescope.
+Part of the observatory software for the Warwick one-meter telescope.
 
 environment is a commandline utility that queries the environment daemon.
 
