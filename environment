@@ -84,6 +84,7 @@ def print_status(daemon):
         print_vaisala_status('W1m Vaisala', data.get('vaisala'))
         print_vaisala_status('GOTO Vaisala', data.get('goto_vaisala'))
         print_roomalert_status(data.get('roomalert'))
+        print_rasa_roomalert_status(data.get('goto_roomalert'))
         print_superwasp_status(data.get('superwasp'))
         print_tng_status(data.get('tng'))
         print_power_status(data.get('power'))
@@ -121,6 +122,16 @@ def print_roomalert_status(data):
     print('       Side Hatch: ' + format_set(data['hatch_closed'], DOOR_STATUS))
     print('        Trap Door: ' + format_set(data['trap_closed'], DOOR_STATUS))
     print(' Tel. Sec. System: ' + format_set(data['security_system_safe'], SECSYS_STATUS))
+    print()
+
+def print_rasa_roomalert_status(data):
+    """Prints RASA data from the GOTO Room Alert"""
+    if data is None:
+        return
+
+    print('Room Alert data from ' + format_date(data))
+    print('   Internal Temp.: ' + format_measurement(data['dome2_internal_temp'], '\u00B0C'))
+    print('    Internal Hum.: ' + format_measurement(data['dome2_internal_humidity'], ' %RH'))
     print()
 
 def print_superwasp_status(data):

@@ -71,6 +71,19 @@ def onemetre_roomalert_parameters(limits, warn_limits):
 
     return build_parameter_list(AggregateParameter, params, limits, warn_limits)
 
+def goto_roomalert_parameters(limits, warn_limits):
+    """Returns a PyroWatcher parameter list for monitoring the goto roomalertd instance"""
+    params = {
+        'internal_temp': AggregateBehaviour.Range,
+        'internal_humidity': AggregateBehaviour.Range,
+        'dome2_internal_temp': AggregateBehaviour.Range,
+        'dome2_internal_humidity': AggregateBehaviour.Range,
+        'roomalert_temp': AggregateBehaviour.Range,
+        'roomalert_humidity': AggregateBehaviour.Range,
+    }
+
+    return build_parameter_list(AggregateParameter, params, limits, warn_limits)
+
 def superwasp_parameters(limits, warn_limits):
     """Returns a PyroWatcher parameter list for monitoring the superwaspd instance"""
     params = {

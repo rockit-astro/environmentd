@@ -25,6 +25,7 @@ from . import (
     SunMoonWatcher)
 from .parameters import (
     vaisala_parameters,
+    goto_roomalert_parameters,
     superwasp_parameters,
     tng_parameters,
     diskspace_parameters,
@@ -47,6 +48,7 @@ SUPERWASP_TIME_GAP_MAX = datetime.timedelta(seconds=60)
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
 VAISALA_QUERY_DELAY = 10
+ROOMALERT_QUERY_DELAY = 10
 SUPERWASP_QUERY_DELAY = 10
 TNG_QUERY_DELAY = 300
 DISKSPACE_QUERY_DELAY = 30
@@ -66,6 +68,15 @@ VAISALA_WARN_LIMITS = {
     'temperature': (3, 30),
     'relative_humidity': (0, 50),
     'dew_point_delta': (10, 100)
+}
+
+ROOMALERT_LIMITS = {
+    'dome2_internal_temp': (0, 50),
+    'dome2_internal_humidity': (0, 75),
+}
+ROOMALERT_WARN_LIMITS = {
+    'dome2_internal_temp': (3, 30),
+    'dome2_internal_humidity': (0, 50)
 }
 
 SUPERWASP_LIMITS = {
@@ -110,6 +121,10 @@ class RASAConfig:
 
             PyroWatcher('goto_vaisala', daemons.goto_vaisala, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
                         WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS)),
+
+            PyroWatcher('goto_roomalert', daemons.goto_roomalert, ROOMALERT_QUERY_DELAY,
+                        TIME_GAP_MAX, WINDOW_LENGTH,
+                        goto_roomalert_parameters(ROOMALERT_LIMITS, ROOMALERT_WARN_LIMITS)),
 
             PyroWatcher('superwasp', daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
                         SUPERWASP_TIME_GAP_MAX, WINDOW_LENGTH,
