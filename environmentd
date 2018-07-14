@@ -43,6 +43,7 @@ class EnvironmentDaemon:
     def __init__(self, config):
         self._control_ips = config.control_ips
         self._watchers = config.get_watchers()
+        self._log_name = config.log_name
 
     @Pyro4.expose
     def status(self):
@@ -60,7 +61,7 @@ class EnvironmentDaemon:
 
         print('{} MESSAGE: clearing cached history' \
             .format(datetime.datetime.utcnow()))
-        log.warning('environmentd', 'Clearing cached environment measurements')
+        log.warning(self._log_name, 'Clearing cached environment measurements')
         for watcher in self._watchers:
             watcher.clear_history()
         return CommandStatus.Success

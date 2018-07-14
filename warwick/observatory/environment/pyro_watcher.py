@@ -30,13 +30,15 @@ from warwick.observatory.common import log
 
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, daemon, query_delay, max_data_gap, window_length, parameters):
+    def __init__(self, daemon_name, daemon, query_delay, max_data_gap, window_length, parameters,
+                 log_name):
         self.daemon_name = daemon_name
         self._daemon = daemon
         self._query_delay = query_delay
         self._max_data_gap = max_data_gap
         self._window_length = window_length
         self._parameters = parameters
+        self._log_name = log_name
         self._last_query_failed = False
 
         # Place a hard limit on the number of stored measurements to simplify
@@ -70,19 +72,19 @@ class PyroWatcher:
 
                     if self._last_query_failed or len(self._data) == 1:
                         prefix = 'Restored' if self._last_query_failed else 'Established'
-                        log.info('environmentd', prefix + ' contact with ' + self.daemon_name)
+                        log.info(self._log_name, prefix + ' contact with ' + self.daemon_name)
                     self._last_query_failed = False
                 else:
                     print('{} WARNING: recieved empty data from {}' \
                         .format(now(), self.daemon_name))
                     if not self._last_query_failed:
-                        log.error('environmentd', 'Lost contact with ' + self.daemon_name)
+                        log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
                     self._last_query_failed = True
             except Exception as exception:
                 print('{} ERROR: failed to query from {}: {}' \
                       .format(now(), self.daemon_name, str(exception)))
                 if not self._last_query_failed:
-                    log.error('environmentd', 'Lost contact with ' + self.daemon_name)
+                    log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
 
                 self._last_query_failed = True
             time.sleep(self._query_delay)

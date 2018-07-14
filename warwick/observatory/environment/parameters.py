@@ -131,10 +131,17 @@ def onemetre_power_parameters(limits, warn_limits):
         'main_ups_status': {'behaviour': AggregateBehaviour.Set, 'valid_set_values': set([2])},
         'main_ups_battery_healthy': AggregateBehaviour.Set,
         'main_ups_battery_remaining': AggregateBehaviour.Range,
-        'dome_ups_status': {'behaviour': AggregateBehaviour.Set, 'valid_set_values': set([2])},
-        'dome_ups_battery_healthy': AggregateBehaviour.Set,
-        'dome_ups_battery_remaining': AggregateBehaviour.Range,
         'light': AggregateBehaviour.Set
+    }
+
+    return build_parameter_list(AggregateParameter, params, limits, warn_limits)
+
+def rasa_power_parameters(limits, warn_limits):
+    """Returns a PyroWatcher parameter list for monitoring the w1m powerd instance"""
+    params = {
+        'ups_status': {'behaviour': AggregateBehaviour.Set, 'valid_set_values': set([2])},
+        'ups_battery_healthy': AggregateBehaviour.Set,
+        'ups_battery_remaining': AggregateBehaviour.Range,
     }
 
     return build_parameter_list(AggregateParameter, params, limits, warn_limits)

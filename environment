@@ -161,8 +161,12 @@ def print_power_status(data):
         return
 
     print('UPS data from ' + format_date(data))
-    print('         Main UPS: ' + format_ups(data, 'main_ups'))
-    print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
+    if 'main_ups_battery_remaining' in data:
+        print('         Main UPS: ' + format_ups(data, 'main_ups'))
+    if 'dome_ups_battery_remaining' in data:
+        print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
+    if 'ups_battery_remaining' in data:
+        print('              UPS: ' + format_ups(data, 'ups'))
     print()
 
 def print_network_status(data):

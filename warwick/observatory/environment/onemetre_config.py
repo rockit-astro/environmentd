@@ -115,47 +115,53 @@ NETPING_LIMITS = {
 
 POWER_LIMITS = {
     'main_ups_battery_remaining': (85, 101),
-    'dome_ups_battery_remaining': (85, 101)
 }
 POWER_WARN_LIMITS = {
     'main_ups_battery_remaining': (99, 101),
-    'dome_ups_battery_remaining': (99, 101)
 }
 
 class OneMetreConfig:
     """Configuration for the W1m's Enviroment daemon"""
     daemon = daemons.onemetre_environment
+    log_name = 'environmentd'
     control_ips = [IP.OneMetreDome, IP.OneMetreTCS]
 
     def get_watchers():
         """Returns a list of PyroWatchers to be monitored"""
         return [
             PyroWatcher('vaisala', daemons.onemetre_vaisala, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
-                        WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS)),
+                        WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('goto_vaisala', daemons.goto_vaisala, VAISALA_QUERY_DELAY, TIME_GAP_MAX,
-                        WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS)),
+                        WINDOW_LENGTH, vaisala_parameters(VAISALA_LIMITS, VAISALA_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('roomalert', daemons.onemetre_roomalert, ROOMALERT_QUERY_DELAY,
                         TIME_GAP_MAX, WINDOW_LENGTH,
-                        onemetre_roomalert_parameters(ROOMALERT_LIMITS, ROOMALERT_WARN_LIMITS)),
+                        onemetre_roomalert_parameters(ROOMALERT_LIMITS, ROOMALERT_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('superwasp', daemons.superwasp_log, SUPERWASP_QUERY_DELAY,
                         SUPERWASP_TIME_GAP_MAX, WINDOW_LENGTH,
-                        superwasp_parameters(SUPERWASP_LIMITS, SUPERWASP_WARN_LIMITS)),
+                        superwasp_parameters(SUPERWASP_LIMITS, SUPERWASP_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('tng', daemons.tng_log, TNG_QUERY_DELAY, TNG_TIME_GAP_MAX,
-                        WINDOW_LENGTH, tng_parameters()),
+                        WINDOW_LENGTH, tng_parameters(), OneMetreConfig.log_name),
 
             PyroWatcher('diskspace', daemons.onemetre_tcs_diskspace, DISKSPACE_QUERY_DELAY,
                         DISKSPACE_TIME_GAP_MAX, WINDOW_LENGTH,
-                        diskspace_parameters(DISKSPACE_LIMITS, DISKSPACE_WARN_LIMITS)),
+                        diskspace_parameters(DISKSPACE_LIMITS, DISKSPACE_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('netping', daemons.observatory_network_ping, NETPING_QUERY_DELAY,
-                        NETPING_TIME_GAP_MAX, WINDOW_LENGTH, netping_parameters(NETPING_LIMITS)),
+                        NETPING_TIME_GAP_MAX, WINDOW_LENGTH, netping_parameters(NETPING_LIMITS),
+                        OneMetreConfig.log_name),
 
             PyroWatcher('power', daemons.onemetre_power, POWER_QUERY_DELAY, TIME_GAP_MAX,
-                        WINDOW_LENGTH, onemetre_power_parameters(POWER_LIMITS, POWER_WARN_LIMITS)),
+                        WINDOW_LENGTH, onemetre_power_parameters(POWER_LIMITS, POWER_WARN_LIMITS),
+                        OneMetreConfig.log_name),
 
             SunMoonWatcher('ephem')
         ]
