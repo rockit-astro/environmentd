@@ -1,5 +1,5 @@
 Name:      onemetre-environment-server
-Version:   3.1.2
+Version:   3.1.3
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick one-metre telescope.
@@ -17,6 +17,7 @@ environmentd aggregates the status of the lower level enviroment daemons over a 
 %build
 mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_unitdir}
+mkdir -p %{buildroot}/var/tmp/daemon_home/astropy
 
 %{__install} %{_sourcedir}/environmentd %{buildroot}%{_bindir}
 %{__install} %{_sourcedir}/environmentd.service %{buildroot}%{_unitdir}
@@ -35,5 +36,6 @@ mkdir -p %{buildroot}%{_unitdir}
 %{_bindir}/environmentd
 %defattr(-,root,root,-)
 %{_unitdir}/environmentd.service
+%dir /var/tmp/daemon_home/astropy
 
 %changelog

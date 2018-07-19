@@ -12,6 +12,8 @@ ExecStartPost=/usr/bin/env python3.4 -u /usr/bin/obslog info environmentd Starte
 ExecStopPost=/usr/bin/env python3.4 -u /usr/bin/obslog info environmentd Stopped by systemd
 StandardOutput=syslog
 StandardError=syslog
+Environment="XDG_CONFIG_HOME=/var/tmp/daemon_home"
+Environment="XDG_CACHE_HOME=/var/tmp/daemon_home"
 
 [Install]
 WantedBy=multi-user.target
