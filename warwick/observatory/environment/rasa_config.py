@@ -44,7 +44,7 @@ TIME_GAP_MAX = datetime.timedelta(seconds=30)
 TNG_TIME_GAP_MAX = datetime.timedelta(minutes=10)
 DISKSPACE_TIME_GAP_MAX = datetime.timedelta(minutes=1)
 NETPING_TIME_GAP_MAX = datetime.timedelta(minutes=5)
-SUPERWASP_TIME_GAP_MAX = datetime.timedelta(seconds=60)
+SUPERWASP_TIME_GAP_MAX = datetime.timedelta(seconds=120)
 
 # Delay (in seconds) between update iterations.
 # Actual query period will be slightly longer than this due to comms delays.
