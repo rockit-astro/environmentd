@@ -98,7 +98,7 @@ SUPERWASP_WARN_LIMITS = {
 
 DISKSPACE_LIMITS = {
     'data_fs_available_bytes': (5 * 2**30, 2 * 2**40),
-    'data_fs_percent_available': (5, 100)
+    'data_fs_percent_available': (0, 100)
 }
 DISKSPACE_WARN_LIMITS = {
     'data_fs_available_bytes': (10 * 2**30, 2 * 2**40),
