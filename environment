@@ -327,12 +327,7 @@ def format_diskspace(raw, percent):
         bytes_color = FMT_GREEN if bytes_safe else FMT_RED
         bytes_str = FMT_BOLD + bytes_color + str(round(raw['latest'] / 2**30, 1)) + FMT_CLEAR
 
-        percent_safe = percent['latest'] >= percent['limits'][0] \
-            and percent['latest'] <= percent['limits'][1]
-        percent_color = FMT_GREEN if percent_safe else FMT_RED
-        percent_str = FMT_BOLD + percent_color + '{0:.0f}'.format(percent['latest']) + FMT_CLEAR
-
-        return '{0} GiB ({1}%) available'.format(bytes_str, percent_str)
+        return '{0} GiB available'.format(bytes_str)
 
     return FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 

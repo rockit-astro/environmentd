@@ -1,5 +1,5 @@
 Name:      observatory-environment-client
-Version:   3.1.2
+Version:   3.1.3
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment client for the Warwick one-metre telescope.
