@@ -9,7 +9,7 @@ all:
 	${RPMBUILD} -ba onemetre-environment-server.spec
 	${RPMBUILD} -ba rasa-environment-server.spec
 	${RPMBUILD} -ba observatory-environment-client.spec
-	${RPMBUILD} -ba python34-warwick-observatory-environment.spec
+	${RPMBUILD} -ba python36-warwick-observatory-environment.spec
 	mv build/noarch/*.rpm .
 	rm -rf build
 

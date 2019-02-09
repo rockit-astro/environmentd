@@ -1,12 +1,12 @@
 Name:      observatory-environment-client
-Version:   3.1.3
+Version:   3.2.0
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment client for the Warwick one-metre telescope.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
-Requires:  python34, python34-Pyro4, python34-warwick-observatory-common, python34-warwick-observatory-environment
+Requires:  python36, python36-Pyro4, python36-warwick-observatory-common, python36-warwick-observatory-environment
 
 %description
 Part of the observatory software for the Warwick one-meter telescope.

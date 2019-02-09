@@ -6,7 +6,7 @@ Part of the observatory software for the Warwick one-meter and RASA prototype te
 
 `environment` is a commandline utility that queries the environment daemon.
 
-`python34-warwick-observatory-environment` is a python module with the common environment code.
+`python36-warwick-observatory-environment` is a python module with the common environment code.
 
 ### Software Setup (W1m)
 
