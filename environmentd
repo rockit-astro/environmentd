@@ -27,15 +27,11 @@ import sys
 import Pyro4
 from warwick.observatory.common import log
 from warwick.observatory.common.helpers import pyro_client_matches
-from warwick.observatory.environment import CommandStatus, OneMetreConfig, RASAConfig
+from warwick.observatory.environment import CommandStatus, Config
 
 # Include more detailed exceptions
 sys.excepthook = Pyro4.util.excepthook
 
-CONFIG = {
-    'onemetre': OneMetreConfig,
-    'rasa': RASAConfig
-}
 
 class EnvironmentDaemon:
     """Daemon class for communicating with the lower level hardware daemons"""
@@ -59,16 +55,16 @@ class EnvironmentDaemon:
         if not pyro_client_matches(self._control_ips):
             return CommandStatus.InvalidControlIP
 
-        print('{} MESSAGE: clearing cached history' \
-            .format(datetime.datetime.utcnow()))
+        print('{} MESSAGE: clearing cached history'.format(datetime.datetime.utcnow()))
         log.warning(self._log_name, 'Clearing cached environment measurements')
         for watcher in self._watchers:
             watcher.clear_history()
         return CommandStatus.Success
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Environment Server')
-    parser.add_argument('telescope', choices=CONFIG.keys(), help='Select a telescope')
+    parser.add_argument('config', help='Path to configuration json file')
     args = parser.parse_args()
-    telescope = CONFIG[args.telescope]
-    telescope.daemon.launch(EnvironmentDaemon(telescope))
+    c = Config(args.config)
+    c.daemon.launch(EnvironmentDaemon(c))

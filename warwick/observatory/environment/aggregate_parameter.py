@@ -19,22 +19,41 @@
 # pylint: disable=too-few-public-methods
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-branches
+# pylint: disable=too-many-instance-attributes
 
 import datetime
 import statistics
+
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
     Range, Median, Latest, Set = range(4)
 
+    @classmethod
+    def parse(cls, value):
+        """Parses a string into an AggregateBehaviour"""
+        if value == 'Range':
+            return cls.Range
+        if value == 'Median':
+            return cls.Median
+        if value == 'Latest':
+            return cls.Latest
+        if value == 'Set':
+            return cls.Set
+        raise ValueError('could not convert string to AggregateBehaviour: ' + value)
+
+
 class AggregateParameter:
     """Defines the aggregation behaviour for a specific environment parameter"""
-    def __init__(self, name, behaviour, limits=None, warn_limits=None, valid_set_values=None,
-                 measurement_name=None, ignore_values=None):
+    def __init__(self, name, behaviour, label, unit=None, limits=None, warn_limits=None,
+                 valid_set_values=None, display=None, measurement_name=None, ignore_values=None):
         self.name = name
+        self._label = label
+        self._unit = unit
         self._behaviour = behaviour
         self._limits = limits
         self._warn_limits = warn_limits
+        self._display = display
         self._valid_set_values = valid_set_values
         self._ignore_values = ignore_values
         self._measurement_name = measurement_name if measurement_name is not None else name
@@ -44,6 +63,8 @@ class AggregateParameter:
         Aggregated information for this measurement
 
         Returns a dictionary of values:
+           label: Short human-readable description of the measurement
+           unit (optional): Human-readable description of the measurement unit
            unsafe: True if at least one measurement within the window was outside the defined limits
            warning: True if at least one measurement within the window was in the warning limits
            current: True if the latest measurement was more recent than the stale data threshold
@@ -57,6 +78,7 @@ class AggregateParameter:
            max (optional): Maximum aggregated value for Range parameters
            values (optional): Values seen during the aggregation period for Set parameters
            valid_values (optional): Values that don't trigger an unsafe condition for Set parameters
+           format (optional): ID describing what set values mean
 
         Note that unsafe and warning will be FALSE if there is no data for this measurement,
         so always check current and/or date_count before trying to interpret that flag
@@ -72,6 +94,7 @@ class AggregateParameter:
         measurement_end = measurements[-1]['date'] if measurements else datetime.datetime.min
 
         ret = {
+            'label': self._label,
             'unsafe': False,
             'warning': False,
             'current': measurement_end >= stale_measurement_threshold,
@@ -79,6 +102,9 @@ class AggregateParameter:
             'date_end': measurement_end.strftime('%Y-%m-%dT%H:%M:%SZ'),
             'date_count' : len(measurements),
         }
+
+        if self._unit:
+            ret['unit'] = self._unit
 
         if self._limits:
             ret['limits'] = self._limits
@@ -117,10 +143,13 @@ class AggregateParameter:
             ret['latest'] = measurements[-1][self._measurement_name]
 
             # Convert to a set to remove duplicates
-            values = set([m[self._measurement_name] for m in measurements])
+            values = {m[self._measurement_name] for m in measurements}
 
             # Convert back to a list so it can be serialized as json
             ret['values'] = list(values)
+
+            if self._display:
+                ret['display'] = self._display
 
             if self._valid_set_values:
                 ret['valid_values'] = list(self._valid_set_values)
@@ -131,6 +160,9 @@ class AggregateParameter:
         else:
             ret['latest'] = measurements[-1][self._measurement_name]
 
+            if self._display:
+                ret['display'] = self._display
+
             if self._limits and ret['current']:
                 ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
 
@@ -139,6 +171,7 @@ class AggregateParameter:
                     or ret['latest'] > self._warn_limits[1]
 
         return ret
+
 
 class FilterInvalidAggregateParameter(AggregateParameter):
     """AggregateParameter subclass for parameters that are paired with a _valid flag"""

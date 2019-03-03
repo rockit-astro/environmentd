@@ -7,7 +7,7 @@ After=network-online.target
 [Service]
 Restart=on-failure
 Type=simple
-ExecStart=/usr/bin/env python3.6 -u /usr/bin/environmentd onemetre
+ExecStart=/usr/bin/env python3.6 -u /usr/bin/environmentd /etc/environmentd/sensors.json
 ExecStartPost=/usr/bin/env python3.6 -u /usr/bin/obslog info environmentd Started by systemd
 ExecStopPost=/usr/bin/env python3.6 -u /usr/bin/obslog info environmentd Stopped by systemd
 StandardOutput=syslog

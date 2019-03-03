@@ -30,11 +30,6 @@ import sys
 import Pyro4
 from warwick.observatory.common import daemons
 
-DAEMONS = {
-    'onemetre': daemons.onemetre_environment,
-    'rasa': daemons.rasa_environment
-}
-
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
 
@@ -44,35 +39,44 @@ FMT_RED = u'\033[91m'
 FMT_BOLD = u'\033[1m'
 FMT_CLEAR = u'\033[0m'
 
-UPS_STATUS = {
-    1: FMT_BOLD + FMT_RED + 'UNKNOWN' + FMT_CLEAR,
-    2: FMT_BOLD + FMT_GREEN + 'ONLINE' + FMT_CLEAR,
-    3: FMT_BOLD + FMT_YELLOW + 'ON BATTERY' + FMT_CLEAR,
-    4: FMT_BOLD + FMT_RED + 'SMART BOOST' + FMT_CLEAR,
-    5: FMT_BOLD + FMT_RED + 'TIMED SLEEPING' + FMT_CLEAR,
-    6: FMT_BOLD + FMT_RED + 'SOFTWARE BYPASS' + FMT_CLEAR,
-    7: FMT_BOLD + FMT_RED + 'OFF' + FMT_CLEAR,
-    8: FMT_BOLD + FMT_RED + 'REBOOTING' + FMT_CLEAR,
-    9: FMT_BOLD + FMT_RED + 'SWITCHED BYPASS' + FMT_CLEAR,
-    10: FMT_BOLD + FMT_RED + 'HARDWARE FAILURE BYPASS' + FMT_CLEAR,
-    11: FMT_BOLD + FMT_RED + 'SLEEPING UNTIL POWER RETURNS' + FMT_CLEAR,
-    12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR,
+SET_LABELS = {
+    'BoolPowerOnOff': {
+        False: FMT_BOLD + 'POWER OFF' + FMT_CLEAR,
+        True: FMT_BOLD + 'POWER ON' + FMT_CLEAR
+    },
+    'BoolClosedOpen': {
+        False: FMT_BOLD + 'OPEN' + FMT_CLEAR,
+        True: FMT_BOLD + 'CLOSED' + FMT_CLEAR
+    },
+    'BoolSafeTripped': {
+        False: FMT_BOLD + FMT_RED + 'TRIPPED' + FMT_CLEAR,
+        True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
+    },
+    'BoolHealthyUnhealthy': {
+        False: FMT_BOLD + FMT_RED + 'UNHEALTY' + FMT_CLEAR,
+        True: FMT_BOLD + FMT_GREEN + 'HEALTHY' + FMT_CLEAR
+    },
+    'UPSStatus': {
+        1: FMT_BOLD + FMT_RED + 'UNKNOWN' + FMT_CLEAR,
+        2: FMT_BOLD + FMT_GREEN + 'ONLINE' + FMT_CLEAR,
+        3: FMT_BOLD + FMT_YELLOW + 'ON BATTERY' + FMT_CLEAR,
+        4: FMT_BOLD + FMT_RED + 'SMART BOOST' + FMT_CLEAR,
+        5: FMT_BOLD + FMT_RED + 'TIMED SLEEPING' + FMT_CLEAR,
+        6: FMT_BOLD + FMT_RED + 'SOFTWARE BYPASS' + FMT_CLEAR,
+        7: FMT_BOLD + FMT_RED + 'OFF' + FMT_CLEAR,
+        8: FMT_BOLD + FMT_RED + 'REBOOTING' + FMT_CLEAR,
+        9: FMT_BOLD + FMT_RED + 'SWITCHED BYPASS' + FMT_CLEAR,
+        10: FMT_BOLD + FMT_RED + 'HARDWARE FAILURE BYPASS' + FMT_CLEAR,
+        11: FMT_BOLD + FMT_RED + 'SLEEPING UNTIL POWER RETURNS' + FMT_CLEAR,
+        12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR
+    }
 }
 
-DOOR_STATUS = {
-    False: FMT_BOLD + 'OPEN' + FMT_CLEAR,
-    True: FMT_BOLD + 'CLOSED' + FMT_CLEAR
-}
 
-SECSYS_STATUS = {
-    False: FMT_BOLD + FMT_RED + 'TRIPPED' + FMT_CLEAR,
-    True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
-}
-
-def print_status(daemon):
+def print_status():
     """Prints the latest environment data in human-readable form"""
     try:
-        with daemon.connect() as environment:
+        with daemons.observatory_environment.connect() as environment:
             data = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -81,129 +85,37 @@ def print_status(daemon):
     if data is None:
         print('No data available')
     else:
-        print_vaisala_status('W1m Vaisala', data.get('vaisala'))
-        print_vaisala_status('GOTO Vaisala', data.get('goto_vaisala'))
-        print_roomalert_status(data.get('roomalert'))
-        print_rasa_roomalert_status(data.get('goto_roomalert'))
-        print_superwasp_status(data.get('superwasp'))
-        print_tng_status(data.get('tng'))
-        print_power_status(data.get('power'))
-        print_network_status(data.get('netping'))
-        print_diskspace_status(data.get('diskspace'))
-        print_ephem_status(data.get('ephem'))
+        # Find the longest label to set the parameter indent
+        max_label_length = 0
+        for watcher_data in data.values():
+            for parameter_data in watcher_data['parameters'].values():
+                max_label_length = max(max_label_length, len(parameter_data['label']))
+
+        for watcher_data in data.values():
+            print(watcher_data['label'] + ' data from ' + format_date(watcher_data['parameters']))
+            for parameter_data in watcher_data['parameters'].values():
+                label = parameter_data['label']
+                label_padding = max_label_length - len(label)
+                suffix = ''
+                if 'unit' in parameter_data:
+                    suffix = ' ' + parameter_data['unit']
+
+                output = ' ' * label_padding + label + ': '
+                if 'values' in parameter_data:
+                    output += format_set(parameter_data)
+                else:
+                    output += format_measurement(parameter_data, suffix)
+
+                print(output)
+            print()
+
     return 0
 
-def print_vaisala_status(name, data):
-    """Prints data from one of the Vaisala units"""
-    if data is None:
-        return
 
-    print(name + ' data from ' + format_date(data))
-    print('             Wind: ' + format_measurement(data['wind_speed'], ' km/h'))
-    print('      Median Wind: ' + format_measurement(data['median_wind_speed'], ' km/h'))
-    print('         Pressure: ' + format_measurement(data['pressure'], ' hPa'))
-    print('    Outside Temp.: ' + format_measurement(data['temperature'], '\u00B0C'))
-    print('     Outside Hum.: ' + format_measurement(data['relative_humidity'], ' %RH'))
-    print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C', fmt='.2f'))
-    print('Accumulated Rain.: ' + format_measurement(data['accumulated_rain'], ' mm', fmt='.2f'))
-    print()
-
-def print_roomalert_status(data):
-    """Prints data from the W1m Room Alert"""
-    if data is None:
-        return
-
-    print('Room Alert data from ' + format_date(data))
-    print('   Internal Temp.: ' + format_measurement(data['internal_temp'], '\u00B0C'))
-    print('    Internal Hum.: ' + format_measurement(data['internal_humidity'], ' %RH'))
-    print('      Truss Temp.: ' + format_measurement(data['truss_temp'], '\u00B0C'))
-    print('     Server Temp.: ' + format_measurement(data['roomalert_temp'], '\u00B0C'))
-    print('      Server Hum.: ' + format_measurement(data['roomalert_humidity'], ' %RH'))
-    print('       Side Hatch: ' + format_set(data['hatch_closed'], DOOR_STATUS))
-    print('        Trap Door: ' + format_set(data['trap_closed'], DOOR_STATUS))
-    print(' Tel. Sec. System: ' + format_set(data['security_system_safe'], SECSYS_STATUS))
-    print()
-
-def print_rasa_roomalert_status(data):
-    """Prints RASA data from the GOTO Room Alert"""
-    if data is None:
-        return
-
-    print('Room Alert data from ' + format_date(data))
-    print('   Internal Temp.: ' + format_measurement(data['dome2_internal_temp'], '\u00B0C'))
-    print('    Internal Hum.: ' + format_measurement(data['dome2_internal_humidity'], ' %RH'))
-    print()
-
-def print_superwasp_status(data):
-    """Prints data from the SuperWASP weather log"""
-    if data is None:
-        return
-
-    print('SuperWASP data from ' + format_date(data))
-    print('     Outside Hum.: ' + format_measurement(data['ext_humidity'], ' %RH'))
-    print('        Sky Temp.: ' + format_measurement(data['sky_temp'], '\u00B0C'))
-    print('  Temp. > Dew Pt.: ' + format_measurement(data['dew_point_delta'], '\u00B0C', fmt='.2f'))
-    print()
-
-def print_tng_status(data):
-    """Prints data from the TNG weather log"""
-    if data is None:
-        return
-
-    print('TNG data from ' + format_date(data))
-    print('       Dust Conc.: ' + format_measurement(data['dust'], ' ug/m\u00B3'))
-    print('           Seeing: ' + format_measurement(data['seeing'], '"'))
-    print()
-
-def print_power_status(data):
-    """Prints data from the W1m UPSes"""
-    if data is None:
-        return
-
-    print('UPS data from ' + format_date(data))
-    if 'main_ups_battery_remaining' in data:
-        print('         Main UPS: ' + format_ups(data, 'main_ups'))
-    if 'dome_ups_battery_remaining' in data:
-        print('         Dome UPS: ' + format_ups(data, 'dome_ups'))
-    if 'ups_battery_remaining' in data:
-        print('              UPS: ' + format_ups(data, 'ups'))
-    print()
-
-def print_network_status(data):
-    """Prints data from the network ping monitor"""
-    if data is None:
-        return
-
-    print('Network ping data from ' + format_date(data))
-    print('           Google: ' + format_measurement(data['google'], ' ms'))
-    print('         NGTSHead: ' + format_measurement(data['ngtshead'], ' ms'))
-    print()
-
-def print_diskspace_status(data):
-    """Prints data from the W1m TCS disk space monitor"""
-    if data is None:
-        return
-
-    print('Disk space from ' + format_date(data))
-    print('   Data Partition: ' + format_diskspace(data['data_fs_available_bytes'],
-                                                   data['data_fs_percent_available']))
-    print()
-
-def print_ephem_status(data):
-    """Prints sun/moon status"""
-    if data is None:
-        return
-
-    print('Ephemeris from ' + format_date(data))
-    print('     Sun Altitude: ' + format_measurement(data['sun_alt'], '\u00B0'))
-    print('    Moon Altitude: ' + format_measurement(data['moon_alt'], '\u00B0'))
-    print('       Moon Phase: ' + format_measurement(data['moon_phase'], '%'))
-
-def print_json(daemon):
+def print_json():
     """Prints the latest environment data in machine-readable form"""
-    status = None
     try:
-        with daemon.connect() as environment:
+        with daemons.observatory_environment.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -213,19 +125,20 @@ def print_json(daemon):
 
     return 0
 
+
 def format_date(data):
     """Builds a formatted date string for the named data group"""
     start = None
     end = None
     current = False
-    for param in data:
+    for param in data.values():
         try:
-            param_start = datetime.datetime.strptime(data[param]['date_start'],
+            param_start = datetime.datetime.strptime(param['date_start'],
                                                      '%Y-%m-%dT%H:%M:%SZ')
-            param_end = datetime.datetime.strptime(data[param]['date_end'], '%Y-%m-%dT%H:%M:%SZ')
+            param_end = datetime.datetime.strptime(param['date_end'], '%Y-%m-%dT%H:%M:%SZ')
             start = param_start if not start else min(start, param_start)
             end = param_end if not end else min(end, param_end)
-            current = current or data[param]['current']
+            current = current or param['current']
         except:
             pass
 
@@ -240,9 +153,13 @@ def format_date(data):
         ret += FMT_RED + 'NO DATA' + FMT_CLEAR
     return ret
 
-def format_value(value, limits, warn_limits, fmt='.1f'):
+
+def format_value(value, data, fmt='.1f'):
     """Builds a formatted string colored based on the specified limits"""
     color = FMT_BOLD
+    limits = data.get('limits', None)
+    warn_limits = data.get('warn_limits', None)
+
     if limits or warn_limits:
         if limits and (value < limits[0] or value > limits[1]):
             color += FMT_RED
@@ -250,7 +167,17 @@ def format_value(value, limits, warn_limits, fmt='.1f'):
             color += FMT_YELLOW
         else:
             color += FMT_GREEN
-    return color +  ('{0' + fmt +'}').format(value) + FMT_CLEAR
+
+    display = data.get('display', None)
+    if display == 'DiskBytes':
+        value = str(round(value / 2**30, 1))
+        fmt = ''
+    elif display in SET_LABELS:
+        value = SET_LABELS[display].get(value, value)
+        fmt = ''
+
+    return color + ('{0' + fmt + '}').format(value) + FMT_CLEAR
+
 
 def format_measurement(data, suffix='', fmt='.1f'):
     """Builds a formatted string with a value range"""
@@ -258,18 +185,16 @@ def format_measurement(data, suffix='', fmt='.1f'):
         fmt = ':' + fmt
 
     ret = ''
-    limits = data['limits'] if 'limits' in data else None
-    warn_limits = data['warn_limits'] if 'warn_limits' in data else None
     if 'min' in data:
-        ret += format_value(data['min'], limits, warn_limits, fmt) + ' \u2264 '
+        ret += format_value(data['min'], data, fmt) + ' \u2264 '
 
     if data['current']:
-        ret += format_value(data['latest'], limits, warn_limits, fmt)
+        ret += format_value(data['latest'], data, fmt)
     else:
         ret += FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
     if 'max' in data:
-        ret += ' \u2264 ' + format_value(data['max'], limits, warn_limits, fmt)
+        ret += ' \u2264 ' + format_value(data['max'], data, fmt)
 
     if data['current'] or 'max' in data:
         ret += suffix
@@ -281,17 +206,22 @@ def format_measurement(data, suffix='', fmt='.1f'):
 
     return ret
 
-def format_set(data, values):
+
+def format_set(data):
     """Builds a formatted string with specified values"""
+    labels = []
+    if 'display' in data:
+        labels = SET_LABELS.get(data['display'], [])
+
     if data['current']:
-        ret = values[data['latest']] if data['latest'] in values else ''
+        ret = labels.get(data['latest'], data['latest'])
     else:
         ret = FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
     if 'values' in data and (len(data['values']) > 1 or not data['current']):
         if ret:
             ret += ' '
-        display_values = [values[value] for value in values if value in data['values']]
+        display_values = [labels.get(v, v) for v in data['values']]
         ret += '[' + ', '.join(display_values) + ']'
 
     if data['unsafe']:
@@ -301,39 +231,10 @@ def format_set(data, values):
 
     return ret
 
-def format_ups(data, prefix):
-    """Builds a formatted string for a UPS status"""
-    battery_data = data[prefix + '_battery_remaining']
-
-    if battery_data['current']:
-        battery = format_value(battery_data['latest'], battery_data['limits'],
-                               battery_data['warn_limits'], fmt='') + '%'
-    else:
-        battery = FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
-
-    ret = format_set(data[prefix + '_status'], UPS_STATUS)
-    ret += ' (' + battery + ' battery)'
-
-    battery_healthy = data[prefix + '_battery_healthy']
-    if battery_healthy['current'] and False in battery_healthy['values']:
-        ret += FMT_BOLD + FMT_YELLOW + ' REPLACE BATTERY' + FMT_CLEAR
-
-    return ret
-
-def format_diskspace(raw, percent):
-    """Builds a formatted string for the disk status"""
-    if raw['current']:
-        bytes_safe = raw['latest'] >= raw['limits'][0] and raw['latest'] <= raw['limits'][1]
-        bytes_color = FMT_GREEN if bytes_safe else FMT_RED
-        bytes_str = FMT_BOLD + bytes_color + str(round(raw['latest'] / 2**30, 1)) + FMT_CLEAR
-
-        return '{0} GiB available'.format(bytes_str)
-
-    return FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
 
 def print_usage(name):
     """Prints the utility help"""
-    print('Usage: {} [onemetre|rasa] <command>'.format(name))
+    print('Usage: {} <command>'.format(name))
     print()
     print('   status      print a human-readable summary of the aggregated environment status')
     print('   json        print a machine-readable summary of the aggregated environment status')
@@ -341,14 +242,15 @@ def print_usage(name):
 
     return 1
 
+
 if __name__ == '__main__':
-    if len(sys.argv) < 3 or sys.argv[1] not in DAEMONS:
+    if len(sys.argv) < 2:
         sys.exit(print_usage(SCRIPT_NAME))
 
-    if sys.argv[2] == 'status':
-        sys.exit(print_status(DAEMONS[sys.argv[1]]))
-    elif sys.argv[2] == 'json':
-        sys.exit(print_json(DAEMONS[sys.argv[1]]))
+    if sys.argv[1] == 'status':
+        sys.exit(print_status())
+    elif sys.argv[1] == 'json':
+        sys.exit(print_json())
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))

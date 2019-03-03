@@ -1,0 +1,540 @@
+{
+  "daemon": "observatory_environment",
+  "log_name": "environmentd",
+  "window_length": 1200,
+  "control_machines": ["OneMetreDome", "OneMetreTCS", "RASAMain"],
+  "watchers": {
+    "w1m_vaisala": {
+      "label": "W1m Vaisala",
+      "daemon": "onemetre_vaisala",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "filter_invalid": true,
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "relative_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "pressure": {
+          "label": "Pressure",
+          "unit": "hPa",
+          "type": "Latest",
+          "filter_invalid": true
+        },
+        "accumulated_rain": {
+          "label": "Accumulated Rain.",
+          "unit": "mm",
+          "type": "Range",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 0]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [10, 100],
+          "unsafe_limits": [2, 100]
+        }
+      }
+    },
+    "goto_vaisala": {
+      "label": "GOTO Vaisala",
+      "daemon": "goto_vaisala",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "filter_invalid": true,
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "relative_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "pressure": {
+          "label": "Pressure",
+          "unit": "hPa",
+          "type": "Latest",
+          "filter_invalid": true
+        },
+        "accumulated_rain": {
+          "label": "Accumulated Rain.",
+          "unit": "mm",
+          "type": "Range",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 0]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [10, 100],
+          "unsafe_limits": [2, 100]
+        }
+      }
+    },
+    "superwasp": {
+      "label": "SuperWASP",
+      "daemon": "superwasp_log",
+      "query_rate": 10,
+      "stale_age": 120,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "ext_temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "ext_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [10, 100],
+          "unsafe_limits": [2, 100]
+        }
+      }
+    },
+    "netping": {
+      "label": "Network ping",
+      "daemon": "observatory_network_ping",
+      "query_rate": 30,
+      "stale_age": 300,
+      "parameters": {
+        "google": {
+          "label": "Google",
+          "unit": "ms",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 2000]
+        },
+        "ngtshead": {
+          "label": "NGTSHead",
+          "unit": "ms",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 2000]
+        }
+      }
+    },
+    "w1m_roomalert": {
+      "label": "W1m RoomAlert",
+      "daemon": "onemetre_roomalert",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "internal_temp": {
+          "label": "Internal Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "internal_humidity": {
+          "label": "Internal Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "roomalert_temp": {
+          "label": "Server Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "roomalert_humidity": {
+          "label": "Server Hum.",
+          "unit": "%RH",
+          "type": "Range"
+        },
+        "truss_temp": {
+          "label": "Truss Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "hatch_closed": {
+          "label": "Side Hatch",
+          "type": "Set",
+          "display": "BoolClosedOpen"
+        },
+        "trap_closed": {
+          "label": "Trap Door",
+          "type": "Set",
+          "display": "BoolClosedOpen"
+        },
+        "security_system_safe": {
+          "label": "Tel. Sec. System",
+          "type": "Latest",
+          "display": "BoolSafeTripped",
+          "valid_set_values": [true]
+        }
+      }
+    },
+    "goto_roomalert": {
+      "label": "GOTO RoomAlert",
+      "daemon": "goto_roomalert",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "internal_temp": {
+          "label": "GOTO Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "internal_humidity": {
+          "label": "GOTO Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "dome2_internal_temp": {
+          "label": "RASA Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "dome2_internal_humidity": {
+          "label": "RASA Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "roomalert_temp": {
+          "label": "Server Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "roomalert_humidity": {
+          "label": "Server Hum.",
+          "unit": "%RH",
+          "type": "Range"
+        }
+      }
+    },
+    "w1m_power": {
+      "label": "W1m UPS",
+      "daemon": "onemetre_power",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "main_ups_status": {
+          "label": "UPS Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "main_ups_battery_remaining": {
+          "label": "UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "main_ups_battery_healthy": {
+          "label": "UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "light": {
+          "label": "Light",
+          "type": "Latest",
+          "display": "BoolPowerOnOff"
+        },
+        "dehumidifier": {
+          "label": "Dehumidifier",
+          "type": "Latest",
+          "display": "BoolPowerOnOff"
+        }
+      }
+    },
+    "rasa_power": {
+      "label": "RASA UPS",
+      "daemon": "rasa_power",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "ups_status": {
+          "label": "UPS Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups_battery_remaining": {
+          "label": "UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups_battery_healthy": {
+          "label": "UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "light": {
+          "label": "Light",
+          "type": "Latest",
+          "display": "BoolPowerOnOff"
+        },
+        "dehumidifier": {
+          "label": "Dehumidifier",
+          "type": "Latest",
+          "display": "BoolPowerOnOff"
+        }
+      }
+    },
+    "superwasp_ups": {
+      "label": "SWASP UPS",
+      "daemon": "superwasp_ups",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "ups1_status": {
+          "label": "UPS 1 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups1_battery_remaining": {
+          "label": "UPS 1 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups1_battery_healthy": {
+          "label": "UPS 1 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+       "ups2_status": {
+          "label": "UPS 2 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups2_battery_remaining": {
+          "label": "UPS 2 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups2_battery_healthy": {
+          "label": "UPS 2 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        }
+      }
+    },
+    "goto_power": {
+      "label": "GOTO UPS",
+      "daemon": "goto_ups",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "main_ups_status": {
+          "label": "Main UPS Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "main_ups_battery_remaining": {
+          "label": "Main UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "main_ups_battery_healthy": {
+          "label": "Main UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "dome_ups_status": {
+          "label": "Dome UPS Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "dome_ups_battery_remaining": {
+          "label": "Dome UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "dome_ups_battery_healthy": {
+          "label": "Dome UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        }
+      }
+    },
+    "w1m_diskspace": {
+      "label": "W1m Diskspace",
+      "daemon": "onemetre_tcs_diskspace",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [21474836480, 1099511627776],
+          "unsafe_limits": [5368709120, 1099511627776]
+        }
+      }
+    },
+    "rasa_diskspace": {
+      "label": "RASA Diskspace",
+      "daemon": "rasa_diskspace",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 2199023255552],
+          "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "tng": {
+      "label": "TNG",
+      "daemon": "tng_log",
+      "query_rate": 180,
+      "stale_age": 600,
+      "parameters": {
+        "dust": {
+          "label": "Dust Conc.",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unit": "ug/m\u00B3"
+        },
+        "seeing": {
+          "label": "Seeing.",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unit": "\""
+        },
+        "solarimeter": {
+          "label": "Solarimeter.",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unit": "W/m\u00B2"
+        }
+      }
+    },
+    "ephem": {
+      "label": "Ephemeris",
+      "daemon": "observatory_ephemeris",
+      "query_rate": 30,
+      "stale_age": 120,
+      "parameters": {
+        "sun_alt": {
+          "label": "Sun Alt.",
+          "type": "Latest",
+          "unit": "\u00B0",
+          "warn_limits": [-90, -10],
+          "unsafe_limits": [-90, 2]
+        },
+        "moon_alt": {
+          "label": "Moon Alt.",
+          "type": "Latest",
+          "unit": "\u00B0"
+        },
+        "moon_percent_illumination": {
+          "label": "Moon Illumination",
+          "type": "Latest",
+          "unit": "%"
+        }
+      }
+    }
+  }
+}

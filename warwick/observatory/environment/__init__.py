@@ -16,8 +16,5 @@
 
 """environmentd common code"""
 
-from .pyro_watcher import PyroWatcher
-from .sun_moon_watcher import SunMoonWatcher
 from .constants import CommandStatus
-from .onemetre_config import OneMetreConfig
-from .rasa_config import RASAConfig
+from .config import Config

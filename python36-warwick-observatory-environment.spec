@@ -1,5 +1,5 @@
 Name:           python36-warwick-observatory-environment
-Version:        3.2.0
+Version:        4.0.0
 Release:        0
 License:        GPL3
 Summary:        Common backend code for the Warwick one-metre telescope environment daemon

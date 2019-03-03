@@ -20,8 +20,7 @@ script:
  # Clone the centos-packages repository to deploy/repository/
  - deploy/fetch-package-repository.sh
  # Set the spec Revision field to <latest in repo> + 1
- - deploy/repository/set-spec-release.sh onemetre-environment-server.spec
- - deploy/repository/set-spec-release.sh rasa-environment-server.spec
+ - deploy/repository/set-spec-release.sh observatory-environment-server.spec
  - deploy/repository/set-spec-release.sh observatory-environment-client.spec
  - deploy/repository/set-spec-release.sh python36-warwick-observatory-environment.spec
  # Compile rpm packages by running `make` in a centos7 container

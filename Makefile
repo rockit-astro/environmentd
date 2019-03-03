@@ -6,8 +6,7 @@ RPMBUILD = rpmbuild --define "_topdir %(pwd)/build" \
 
 all:
 	mkdir -p build
-	${RPMBUILD} -ba onemetre-environment-server.spec
-	${RPMBUILD} -ba rasa-environment-server.spec
+	${RPMBUILD} -ba observatory-environment-server.spec
 	${RPMBUILD} -ba observatory-environment-client.spec
 	${RPMBUILD} -ba python36-warwick-observatory-environment.spec
 	mv build/noarch/*.rpm .

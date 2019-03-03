@@ -27,23 +27,24 @@ import threading
 import time
 from warwick.observatory.common import log
 
+
 class PyroWatcher:
     """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, daemon, query_delay, max_data_gap, window_length, parameters,
-                 log_name):
+    def __init__(self, daemon_name, daemon, label, query_delay, max_data_gap, window_length,
+                 parameters, log_name):
         self.daemon_name = daemon_name
         self._daemon = daemon
+        self._label = label
         self._query_delay = query_delay
-        self._max_data_gap = max_data_gap
-        self._window_length = window_length
+        self._max_data_gap = datetime.timedelta(seconds=max_data_gap)
+        self._window_length = datetime.timedelta(seconds=window_length)
         self._parameters = parameters
         self._log_name = log_name
         self._last_query_failed = False
 
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
-        queue_len = window_length.seconds * \
-            1.1 / query_delay
+        queue_len = window_length * 1.1 / query_delay
         self._data = deque(maxlen=math.ceil(queue_len))
 
         runloop = threading.Thread(target=self.__run_thread)
@@ -61,11 +62,11 @@ class PyroWatcher:
                     data = daemon.last_measurement()
 
                 if data is not None:
-                    # Pryo doesn't deserialize dates, so we manually manage this.
+                    # Pyro doesn't deserialize dates, so we manually manage this.
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
                     if now() - data['date'] > self._max_data_gap:
-                        print('{} WARNING: recieved stale data from {}: {}' \
-                        .format(now(), self.daemon_name, data['date']))
+                        print('{} WARNING: received stale data from {}: {}'
+                              .format(now(), self.daemon_name, data['date']))
 
                     self._data.append(data)
 
@@ -74,13 +75,13 @@ class PyroWatcher:
                         log.info(self._log_name, prefix + ' contact with ' + self.daemon_name)
                     self._last_query_failed = False
                 else:
-                    print('{} WARNING: recieved empty data from {}' \
-                        .format(now(), self.daemon_name))
+                    print('{} WARNING: received empty data from {}'
+                          .format(now(), self.daemon_name))
                     if not self._last_query_failed:
                         log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
                     self._last_query_failed = True
             except Exception as exception:
-                print('{} ERROR: failed to query from {}: {}' \
+                print('{} ERROR: failed to query from {}: {}'
                       .format(now(), self.daemon_name, str(exception)))
                 if not self._last_query_failed:
                     log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
@@ -97,7 +98,11 @@ class PyroWatcher:
         stale_threshold = datetime.datetime.utcnow() - self._max_data_gap
 
         measurements = [m for m in self._data if m['date'] >= window_start]
-        return {p.name: p.aggregate(measurements, stale_threshold) for p in self._parameters}
+        return {
+            'label': self._label,
+            'parameters': {p.name: p.aggregate(measurements, stale_threshold)
+                           for p in self._parameters}
+        }
 
     def clear_history(self):
         """Clear the cached measurements"""
