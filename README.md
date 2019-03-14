@@ -12,12 +12,12 @@ Part of the observatory software for the Warwick one-meter and RASA prototype te
 
 After installation, the `observatory-environment-server` must be enabled using:
 ```
-sudo systemctl enable enivironmentd.service
+sudo systemctl enable environmentd.service
 ```
 
 The service will automatically start on system boot, or you can start it immediately using:
 ```
-sudo systemctl start enivironmentd.service
+sudo systemctl start environmentd.service
 ```
 
 Finally, open a port in the firewall so that other machines on the network can access the daemon:
