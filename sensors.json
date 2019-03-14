@@ -169,6 +169,12 @@
           "type": "Range",
           "warn_limits": [10, 100],
           "unsafe_limits": [2, 100]
+        },
+        "sky_temp": {
+          "label": "Sky Temp.",
+          "unit": "\u00B0C",
+          "type": "Latest",
+          "warn_limits": [-40, 60]
         }
       }
     },
@@ -409,7 +415,7 @@
         }
       }
     },
-    "goto_power": {
+    "goto_ups": {
       "label": "GOTO UPS",
       "daemon": "goto_ups",
       "query_rate": 10,
