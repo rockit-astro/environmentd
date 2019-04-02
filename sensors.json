@@ -517,6 +517,20 @@
         }
       }
     },
+    "robodimm": {
+      "label": "RoboDIMM",
+      "daemon": "ing_robodimm",
+      "query_rate": 120,
+      "stale_age": 300,
+      "parameters": {
+        "seeing": {
+          "label": "Seeing.",
+          "type": "Latest",
+          "filter_invalid": true,
+          "unit": "\""
+        }
+      }
+    },
     "ephem": {
       "label": "Ephemeris",
       "daemon": "observatory_ephemeris",
