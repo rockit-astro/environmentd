@@ -494,8 +494,8 @@
     "tng": {
       "label": "TNG",
       "daemon": "tng_log",
-      "query_rate": 180,
-      "stale_age": 600,
+      "query_rate": 120,
+      "stale_age": 300,
       "parameters": {
         "dust": {
           "label": "Dust Conc.",
