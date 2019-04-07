@@ -62,7 +62,7 @@
           "type": "Range",
           "filter_invalid": true,
           "warn_limits": [10, 100],
-          "unsafe_limits": [2, 100]
+          "unsafe_limits": [5, 100]
         }
       }
     },
@@ -124,7 +124,7 @@
           "type": "Range",
           "filter_invalid": true,
           "warn_limits": [10, 100],
-          "unsafe_limits": [2, 100]
+          "unsafe_limits": [5, 100]
         }
       }
     },
@@ -168,7 +168,7 @@
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [10, 100],
-          "unsafe_limits": [2, 100]
+          "unsafe_limits": [5, 100]
         },
         "sky_temp": {
           "label": "Sky Temp.",
