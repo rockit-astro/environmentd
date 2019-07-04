@@ -277,15 +277,13 @@
           "label": "RASA Temp.",
           "unit": "\u00B0C",
           "type": "Range",
-          "warn_limits": [3, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [3, 30]
         },
         "dome2_internal_humidity": {
           "label": "RASA Hum.",
           "unit": "%RH",
           "type": "Range",
-          "warn_limits": [0, 50],
-          "unsafe_limits": [0, 75]
+          "warn_limits": [0, 50]
         },
         "roomalert_temp": {
           "label": "Server Temp.",
