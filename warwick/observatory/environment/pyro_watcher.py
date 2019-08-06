@@ -45,6 +45,7 @@ class PyroWatcher:
         # Place a hard limit on the number of stored measurements to simplify
         # cleanup.  Additional filtering is required when iterating the queue.
         queue_len = window_length * 1.1 / query_delay
+        self._data_lock = threading.Lock()
         self._data = deque(maxlen=math.ceil(queue_len))
 
         runloop = threading.Thread(target=self.__run_thread)
@@ -68,11 +69,13 @@ class PyroWatcher:
                         print('{} WARNING: received stale data from {}: {}'
                               .format(now(), self.daemon_name, data['date']))
 
-                    self._data.append(data)
+                    with self._data_lock:
+                        self._data.append(data)
 
-                    if self._last_query_failed or len(self._data) == 1:
-                        prefix = 'Restored' if self._last_query_failed else 'Established'
-                        log.info(self._log_name, prefix + ' contact with ' + self.daemon_name)
+                        if self._last_query_failed or len(self._data) == 1:
+                            prefix = 'Restored' if self._last_query_failed else 'Established'
+                            log.info(self._log_name, prefix + ' contact with ' + self.daemon_name)
+
                     self._last_query_failed = False
                 else:
                     print('{} WARNING: received empty data from {}'
@@ -97,7 +100,9 @@ class PyroWatcher:
         window_start = datetime.datetime.utcnow() - self._window_length
         stale_threshold = datetime.datetime.utcnow() - self._max_data_gap
 
-        measurements = [m for m in self._data if m['date'] >= window_start]
+        with self._data_lock:
+            measurements = [m for m in self._data if m['date'] >= window_start]
+
         return {
             'label': self._label,
             'parameters': {p.name: p.aggregate(measurements, stale_threshold)
@@ -106,4 +111,5 @@ class PyroWatcher:
 
     def clear_history(self):
         """Clear the cached measurements"""
-        self._data.clear()
+        with self._data_lock:
+            self._data.clear()
