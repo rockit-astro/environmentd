@@ -8,7 +8,7 @@ all:
 	mkdir -p build
 	${RPMBUILD} -ba observatory-environment-server.spec
 	${RPMBUILD} -ba observatory-environment-client.spec
-	${RPMBUILD} -ba python36-warwick-observatory-environment.spec
+	${RPMBUILD} -ba python3-warwick-observatory-environment.spec
 	mv build/noarch/*.rpm .
 	rm -rf build
 
