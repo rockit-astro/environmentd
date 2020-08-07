@@ -369,9 +369,9 @@
         }
       }
     },
-    "superwasp_ups": {
+    "superwasp_power": {
       "label": "SWASP UPS",
-      "daemon": "superwasp_ups",
+      "daemon": "superwasp_power",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
