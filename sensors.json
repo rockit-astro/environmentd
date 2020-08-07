@@ -273,18 +273,6 @@
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "dome2_internal_temp": {
-          "label": "RASA Temp.",
-          "unit": "\u00B0C",
-          "type": "Range",
-          "warn_limits": [3, 30]
-        },
-        "dome2_internal_humidity": {
-          "label": "RASA Hum.",
-          "unit": "%RH",
-          "type": "Range",
-          "warn_limits": [0, 50]
-        },
         "roomalert_temp": {
           "label": "Server Temp.",
           "unit": "\u00B0C",
@@ -294,6 +282,28 @@
           "label": "Server Hum.",
           "unit": "%RH",
           "type": "Range"
+        }
+      }
+    },
+	"rasa_internal": {
+      "label": "RASA Internal",
+      "daemon": "rasa_internal_environment",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "temperature": {
+          "label": "RASA Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30]
+        },
+        "relative_humidity": {
+          "label": "RASA Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50]
         }
       }
     },
