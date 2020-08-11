@@ -285,7 +285,58 @@
         }
       }
     },
-	"rasa_internal": {
+    "superwasp_roomalert": {
+      "label": "SuperWASP RoomAlert",
+      "daemon": "superwasp_roomalert",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "comp_room_temp": {
+          "label": "Comp. Room Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "comp_room_humidity": {
+          "label": "Comp. Room Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "rack_temp": {
+          "label": "Rack Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "rack_humidity": {
+          "label": "Rack Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "roomalert_temp": {
+          "label": "RoomAlert Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "roomalert_humidity": {
+          "label": "RoomAlert Hum.",
+          "unit": "%RH",
+          "type": "Range"
+        },
+        "cam_rack_temp": {
+          "label": "Cam. Rack Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        }
+      }
+    },
+    "rasa_internal": {
       "label": "RASA Internal",
       "daemon": "rasa_internal_environment",
       "query_rate": 10,
