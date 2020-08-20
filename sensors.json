@@ -614,6 +614,19 @@
           "unit": "%"
         }
       }
+    },
+    "rain": {
+      "label": "Rain Detector",
+      "daemon": "onemetre_rain",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "unsafe_boards": {
+          "label": "Triggered",
+          "type": "Latest",
+          "unsafe_limits": [0, 0]
+        }
+      }
     }
   }
 }
