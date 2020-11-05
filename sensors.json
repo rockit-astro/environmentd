@@ -321,15 +321,15 @@
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "rack_temp": {
-          "label": "Rack Temp.",
+        "cam_room_temp": {
+          "label": "Cam. Room Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
-        "rack_humidity": {
-          "label": "Rack Hum.",
+        "cam_room_humidity": {
+          "label": "Cam. Room Hum.",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
