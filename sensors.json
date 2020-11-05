@@ -487,6 +487,24 @@
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
+        },
+       "ups3_status": {
+          "label": "UPS 3 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups3_battery_remaining": {
+          "label": "UPS 3 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups3_battery_healthy": {
+          "label": "UPS 3 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
         }
       }
     },
