@@ -169,12 +169,28 @@
           "type": "Range",
           "warn_limits": [10, 100],
           "unsafe_limits": [5, 100]
-        },
-        "sky_temp": {
-          "label": "Sky Temp.",
+        }
+      }
+    },
+    "superwasp_aurora": {
+      "label": "Aurora",
+      "daemon": "superwasp_aurora",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "clarity": {
+          "label": "Sky Clarity",
           "unit": "\u00B0C",
           "type": "Latest",
-          "warn_limits": [-40, 60]
+          "warn_limits": [40, 60]
+        },
+        "light_intensity": {
+          "label": "Light Intensity",
+          "type": "Latest"
+        },
+        "rain_intensity": {
+          "label": "Rain Intensity",
+          "type": "Latest"
         }
       }
     },
