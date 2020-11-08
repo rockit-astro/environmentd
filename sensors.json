@@ -236,16 +236,6 @@
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "roomalert_temp": {
-          "label": "Server Temp.",
-          "unit": "\u00B0C",
-          "type": "Range"
-        },
-        "roomalert_humidity": {
-          "label": "Server Hum.",
-          "unit": "%RH",
-          "type": "Range"
-        },
         "truss_temp": {
           "label": "Truss Temp.",
           "unit": "\u00B0C",
