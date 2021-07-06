@@ -18,10 +18,9 @@ from distutils.core import setup
 
 setup(name='warwick.observatory.environment',
       version='0',
-      packages = ['warwick.observatory.environment'],
+      packages=['warwick.observatory.environment'],
       author='Paul Chote',
       description='Common code for the W1m environment daemon',
       license='GNU GPLv3',
       author_email='p.chote@warwick.ac.uk',
-      url="https://github.com/warwick-one-metre/environmentd",
-)
+      url="https://github.com/warwick-one-metre/environmentd")

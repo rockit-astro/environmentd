@@ -17,10 +17,6 @@
 
 """Commandline client for communicating with environmentd"""
 
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-locals
-# pylint: disable=too-few-public-methods
 # pylint: disable=bare-except
 
 import datetime
@@ -28,47 +24,42 @@ import json
 import os
 import sys
 import Pyro4
-from warwick.observatory.common import daemons
+from warwick.observatory.common import daemons, TFmt
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
 
-FMT_YELLOW = u'\033[93m'
-FMT_GREEN = u'\033[92m'
-FMT_RED = u'\033[91m'
-FMT_BOLD = u'\033[1m'
-FMT_CLEAR = u'\033[0m'
 
 SET_LABELS = {
     'BoolPowerOnOff': {
-        False: FMT_BOLD + 'POWER OFF' + FMT_CLEAR,
-        True: FMT_BOLD + 'POWER ON' + FMT_CLEAR
+        False: TFmt.Bold + 'POWER OFF' + TFmt.Clear,
+        True: TFmt.Bold + 'POWER ON' + TFmt.Clear
     },
     'BoolClosedOpen': {
-        False: FMT_BOLD + 'OPEN' + FMT_CLEAR,
-        True: FMT_BOLD + 'CLOSED' + FMT_CLEAR
+        False: TFmt.Bold + 'OPEN' + TFmt.Clear,
+        True: TFmt.Bold + 'CLOSED' + TFmt.Clear
     },
     'BoolSafeTripped': {
-        False: FMT_BOLD + FMT_RED + 'TRIPPED' + FMT_CLEAR,
-        True: FMT_BOLD + FMT_GREEN + 'SAFE' + FMT_CLEAR
+        False: TFmt.Bold + TFmt.Red + 'TRIPPED' + TFmt.Clear,
+        True: TFmt.Bold + TFmt.Green + 'SAFE' + TFmt.Clear
     },
     'BoolHealthyUnhealthy': {
-        False: FMT_BOLD + FMT_RED + 'UNHEALTY' + FMT_CLEAR,
-        True: FMT_BOLD + FMT_GREEN + 'HEALTHY' + FMT_CLEAR
+        False: TFmt.Bold + TFmt.Red + 'UNHEALTY' + TFmt.Clear,
+        True: TFmt.Bold + TFmt.Green + 'HEALTHY' + TFmt.Clear
     },
     'UPSStatus': {
-        1: FMT_BOLD + FMT_RED + 'UNKNOWN' + FMT_CLEAR,
-        2: FMT_BOLD + FMT_GREEN + 'ONLINE' + FMT_CLEAR,
-        3: FMT_BOLD + FMT_YELLOW + 'ON BATTERY' + FMT_CLEAR,
-        4: FMT_BOLD + FMT_RED + 'SMART BOOST' + FMT_CLEAR,
-        5: FMT_BOLD + FMT_RED + 'TIMED SLEEPING' + FMT_CLEAR,
-        6: FMT_BOLD + FMT_RED + 'SOFTWARE BYPASS' + FMT_CLEAR,
-        7: FMT_BOLD + FMT_RED + 'OFF' + FMT_CLEAR,
-        8: FMT_BOLD + FMT_RED + 'REBOOTING' + FMT_CLEAR,
-        9: FMT_BOLD + FMT_RED + 'SWITCHED BYPASS' + FMT_CLEAR,
-        10: FMT_BOLD + FMT_RED + 'HARDWARE FAILURE BYPASS' + FMT_CLEAR,
-        11: FMT_BOLD + FMT_RED + 'SLEEPING UNTIL POWER RETURNS' + FMT_CLEAR,
-        12: FMT_BOLD + FMT_RED + 'ON SMART TRIM' + FMT_CLEAR
+        1: TFmt.Bold + TFmt.Red + 'UNKNOWN' + TFmt.Clear,
+        2: TFmt.Bold + TFmt.Green + 'ONLINE' + TFmt.Clear,
+        3: TFmt.Bold + TFmt.Yellow + 'ON BATTERY' + TFmt.Clear,
+        4: TFmt.Bold + TFmt.Red + 'SMART BOOST' + TFmt.Clear,
+        5: TFmt.Bold + TFmt.Red + 'TIMED SLEEPING' + TFmt.Clear,
+        6: TFmt.Bold + TFmt.Red + 'SOFTWARE BYPASS' + TFmt.Clear,
+        7: TFmt.Bold + TFmt.Red + 'OFF' + TFmt.Clear,
+        8: TFmt.Bold + TFmt.Red + 'REBOOTING' + TFmt.Clear,
+        9: TFmt.Bold + TFmt.Red + 'SWITCHED BYPASS' + TFmt.Clear,
+        10: TFmt.Bold + TFmt.Red + 'HARDWARE FAILURE BYPASS' + TFmt.Clear,
+        11: TFmt.Bold + TFmt.Red + 'SLEEPING UNTIL POWER RETURNS' + TFmt.Clear,
+        12: TFmt.Bold + TFmt.Red + 'ON SMART TRIM' + TFmt.Clear
     }
 }
 
@@ -142,31 +133,31 @@ def format_date(data):
         except:
             pass
 
-    ret = FMT_BOLD
+    ret = TFmt.Bold
     if start and end:
         ret += start.strftime('%H:%M:%S') + ' \u2014 '
         if not current:
-            ret += FMT_RED
-        ret += end.strftime('%H:%M:%S') + FMT_CLEAR
-        ret += FMT_BOLD + ':' + FMT_CLEAR
+            ret += TFmt.Red
+        ret += end.strftime('%H:%M:%S') + TFmt.Clear
+        ret += TFmt.Bold + ':' + TFmt.Clear
     else:
-        ret += FMT_RED + 'NO DATA' + FMT_CLEAR
+        ret += TFmt.Red + 'NO DATA' + TFmt.Clear
     return ret
 
 
 def format_value(value, data, fmt='.1f'):
     """Builds a formatted string colored based on the specified limits"""
-    color = FMT_BOLD
+    color = TFmt.Bold
     limits = data.get('limits', None)
     warn_limits = data.get('warn_limits', None)
 
     if limits or warn_limits:
         if limits and (value < limits[0] or value > limits[1]):
-            color += FMT_RED
+            color += TFmt.Red
         elif warn_limits and (value < warn_limits[0] or value > warn_limits[1]):
-            color += FMT_YELLOW
+            color += TFmt.Yellow
         else:
-            color += FMT_GREEN
+            color += TFmt.Green
 
     display = data.get('display', None)
     if display == 'DiskBytes':
@@ -176,7 +167,7 @@ def format_value(value, data, fmt='.1f'):
         value = SET_LABELS[display].get(value, value)
         fmt = ''
 
-    return color + ('{0' + fmt + '}').format(value) + FMT_CLEAR
+    return color + ('{0' + fmt + '}').format(value) + TFmt.Clear
 
 
 def format_measurement(data, suffix='', fmt='.1f'):
@@ -191,7 +182,7 @@ def format_measurement(data, suffix='', fmt='.1f'):
     if data['current']:
         ret += format_value(data['latest'], data, fmt)
     else:
-        ret += FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
+        ret += TFmt.Red + TFmt.Bold + 'NO DATA' + TFmt.Clear
 
     if 'max' in data:
         ret += ' \u2264 ' + format_value(data['max'], data, fmt)
@@ -200,9 +191,9 @@ def format_measurement(data, suffix='', fmt='.1f'):
         ret += suffix
 
     if data['unsafe']:
-        ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
+        ret += TFmt.Red + TFmt.Bold + ' (UNSAFE)' + TFmt.Clear
     elif data['warning']:
-        ret += FMT_RED + FMT_YELLOW + ' (WARNING)' + FMT_CLEAR
+        ret += TFmt.Red + TFmt.Yellow + ' (WARNING)' + TFmt.Clear
 
     return ret
 
@@ -216,7 +207,7 @@ def format_set(data):
     if data['current']:
         ret = labels.get(data['latest'], data['latest'])
     else:
-        ret = FMT_RED + FMT_BOLD + 'NO DATA' + FMT_CLEAR
+        ret = TFmt.Red + TFmt.Bold + 'NO DATA' + TFmt.Clear
 
     if 'values' in data and (len(data['values']) > 1 or not data['current']):
         if ret:
@@ -225,9 +216,9 @@ def format_set(data):
         ret += '[' + ', '.join(display_values) + ']'
 
     if data['unsafe']:
-        ret += FMT_RED + FMT_BOLD + ' (UNSAFE)' + FMT_CLEAR
+        ret += TFmt.Red + TFmt.Bold + ' (UNSAFE)' + TFmt.Clear
     elif data['warning']:
-        ret += FMT_RED + FMT_YELLOW + ' (WARNING)' + FMT_CLEAR
+        ret += TFmt.Red + TFmt.Yellow + ' (WARNING)' + TFmt.Clear
 
     return ret
 

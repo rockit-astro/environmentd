@@ -16,10 +16,6 @@
 
 """Class used for aggregating daemon state over time"""
 
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-many-arguments
-# pylint: disable=broad-except
-
 from collections import deque
 import datetime
 import math

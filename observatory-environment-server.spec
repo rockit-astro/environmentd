@@ -6,8 +6,8 @@ Summary:   Environment daemon for the Warwick La Palma telescopes.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
-Requires:  python3, python3-Pyro4, python3-jsonschema, python3-warwick-observatory-common,
-Requires:  python3-warwick-observatory-environment, observatory-log-client, %{?systemd_requires}
+Requires:  python3, python3-Pyro4, python3-warwick-observatory-common,
+Requires:  python3-warwick-observatory-environment, %{?systemd_requires}
 
 %description
 Part of the observatory software for the Warwick La Palma telescopes.

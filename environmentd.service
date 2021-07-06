@@ -8,8 +8,6 @@ After=network-online.target
 Restart=on-failure
 Type=simple
 ExecStart=/usr/bin/env python3.6 -u /usr/bin/environmentd /etc/environmentd/sensors.json
-ExecStartPost=/usr/bin/env python3.6 -u /usr/bin/obslog info environmentd Started by systemd
-ExecStopPost=/usr/bin/env python3.6 -u /usr/bin/obslog info environmentd Stopped by systemd
 StandardOutput=syslog
 StandardError=syslog
 Environment="XDG_CONFIG_HOME=/var/tmp/daemon_home"

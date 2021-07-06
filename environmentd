@@ -19,8 +19,6 @@
    status and weather conditions are aggregated over a time period, and can
    be queried to determine whether it is safe to observe."""
 
-# pylint: disable=invalid-name
-
 import argparse
 import datetime
 import sys

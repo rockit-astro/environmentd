@@ -16,7 +16,6 @@
 
 """Constants and status codes used by environmentd"""
 
-# pylint: disable=too-few-public-methods
 
 class CommandStatus:
     """Return codes for ResetParameterStatus"""
