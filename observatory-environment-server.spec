@@ -1,5 +1,5 @@
 Name:      observatory-environment-server
-Version:   4.0.14
+Version:   20210710
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick La Palma telescopes.
@@ -10,10 +10,6 @@ Requires:  python3, python3-Pyro4, python3-warwick-observatory-common,
 Requires:  python3-warwick-observatory-environment, %{?systemd_requires}
 
 %description
-Part of the observatory software for the Warwick La Palma telescopes.
-
-environmentd aggregates the status of the lower level enviroment daemons over a specified time interval
-and exposes a single endpoint that can be queried to find all recent environment stats.
 
 %build
 mkdir -p %{buildroot}%{_bindir}

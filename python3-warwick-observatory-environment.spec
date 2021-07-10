@@ -1,5 +1,5 @@
 Name:           python3-warwick-observatory-environment
-Version:        4.0.1
+Version:        20210710
 Release:        0
 License:        GPL3
 Summary:        Common backend code for the Warwick one-metre telescope environment daemon
@@ -7,9 +7,6 @@ Url:            https://github.com/warwick-one-metre/environmentd
 BuildArch:      noarch
 
 %description
-Part of the observatory software for the Warwick one-meter telescope.
-
-python3-warwick-w1m-environment holds the common environment code.
 
 %prep
 

@@ -1,5 +1,5 @@
 Name:      observatory-environment-client
-Version:   4.0.1
+Version:   20210710
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment client for the Warwick La Palma telescopes.
@@ -9,9 +9,6 @@ BuildArch: noarch
 Requires:  python3, python3-Pyro4, python3-warwick-observatory-common, python3-warwick-observatory-environment
 
 %description
-Part of the observatory software for the Warwick La Palma telescopes.
-
-environment is a commandline utility that queries the environment daemon.
 
 %build
 mkdir -p %{buildroot}%{_bindir}

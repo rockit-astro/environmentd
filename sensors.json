@@ -2,7 +2,7 @@
   "daemon": "observatory_environment",
   "log_name": "environmentd",
   "window_length": 1200,
-  "control_machines": ["OneMetreDome", "OneMetreTCS", "RASAMain"],
+  "control_machines": ["OneMetreDome", "OneMetreTCS", "CLASPTCS", "SWASPTCS", "GOTOServer"],
   "watchers": {
     "w1m_vaisala": {
       "label": "W1m Vaisala",
@@ -128,50 +128,6 @@
         }
       }
     },
-    "superwasp": {
-      "label": "SuperWASP",
-      "daemon": "superwasp_log",
-      "query_rate": 10,
-      "stale_age": 120,
-      "parameters": {
-        "wind_speed": {
-          "label": "Wind",
-          "unit": "km/h",
-          "type": "Range",
-          "warn_limits": [0, 30],
-          "unsafe_limits": [0, 40]
-        },
-        "median_wind_speed": {
-          "label": "Median Wind",
-          "unit": "km/h",
-          "type": "Median",
-          "median_key": "wind_speed",
-          "warn_limits": [0, 15],
-          "unsafe_limits": [0, 25]
-        },
-        "ext_temperature": {
-          "label": "Outside Temp.",
-          "unit": "\u00B0C",
-          "type": "Range",
-          "warn_limits": [3, 30],
-          "unsafe_limits": [0, 50]
-        },
-        "ext_humidity": {
-          "label": "Outside Hum.",
-          "unit": "%RH",
-          "type": "Range",
-          "warn_limits": [0, 50],
-          "unsafe_limits": [0, 75]
-        },
-        "dew_point_delta": {
-          "label": "Temp. > Dew Pt.",
-          "unit": "\u00B0C",
-          "type": "Range",
-          "warn_limits": [10, 100],
-          "unsafe_limits": [5, 100]
-        }
-      }
-    },
     "superwasp_aurora": {
       "label": "Aurora",
       "daemon": "superwasp_aurora",
@@ -259,9 +215,9 @@
         }
       }
     },
-    "goto_roomalert": {
-      "label": "GOTO RoomAlert",
-      "daemon": "goto_roomalert",
+    "goto_dome1_roomalert": {
+      "label": "GOTO Dome 1 RoomAlert",
+      "daemon": "goto_dome1_roomalert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -288,6 +244,46 @@
           "label": "Server Hum.",
           "unit": "%RH",
           "type": "Range"
+        }
+      }
+    },
+    "goto_dome2_roomalert": {
+      "label": "GOTO Dome 2 RoomAlert",
+      "daemon": "goto_dome2_roomalert",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "roomalert_temp": {
+          "label": "Server Temp.",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "roomalert_humidity": {
+          "label": "Server Hum.",
+          "unit": "%RH",
+          "type": "Range"
+        }
+      }
+    },
+    "goto_dome2_sht35": {
+      "label": "GOTO Dome 2 SHT35",
+      "daemon": "goto_dome2_sht35",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "temperature": {
+          "label": "GOTO Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30]
+        },
+        "relative_humidity": {
+          "label": "GOTO Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50]
         }
       }
     },
@@ -342,25 +338,30 @@
         }
       }
     },
-    "rasa_internal": {
-      "label": "RASA Internal",
-      "daemon": "rasa_internal_environment",
+    "clasp_roomalert": {
+      "label": "CLASP RoomAlert",
+      "daemon": "clasp_roomalert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
-        "temperature": {
-          "label": "RASA Temp.",
+        "internal_temperature": {
+          "label": "Internal Temp.",
           "unit": "\u00B0C",
           "type": "Range",
-          "filter_invalid": true,
-          "warn_limits": [3, 30]
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
         },
-        "relative_humidity": {
-          "label": "RASA Hum.",
+        "internal_humidity": {
+          "label": "Internal Hum.",
           "unit": "%RH",
           "type": "Range",
-          "filter_invalid": true,
-          "warn_limits": [0, 50]
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "mains_power": {
+          "label": "Mains Power",
+          "type": "Set",
+          "display": "BoolPowerOnOff"
         }
       }
     },
@@ -383,42 +384,6 @@
           "unsafe_limits": [85, 101]
         },
         "main_ups_battery_healthy": {
-          "label": "UPS Battery",
-          "type": "Set",
-          "display": "BoolHealthyUnhealthy",
-          "valid_set_values": [true]
-        },
-        "light": {
-          "label": "Light",
-          "type": "Latest",
-          "display": "BoolPowerOnOff"
-        },
-        "dehumidifier": {
-          "label": "Dehumidifier",
-          "type": "Latest",
-          "display": "BoolPowerOnOff"
-        }
-      }
-    },
-    "rasa_power": {
-      "label": "RASA UPS",
-      "daemon": "rasa_power",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "ups_status": {
-          "label": "UPS Status",
-          "type": "Set",
-          "display": "UPSStatus",
-          "valid_set_values": [2]
-        },
-        "ups_battery_remaining": {
-          "label": "UPS Battery",
-          "type": "Range",
-          "warn_limits": [100, 101],
-          "unsafe_limits": [85, 101]
-        },
-        "ups_battery_healthy": {
           "label": "UPS Battery",
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
@@ -504,38 +469,74 @@
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
-        "main_ups_status": {
-          "label": "Main UPS Status",
+        "dome1_upper_ups_status": {
+          "label": "D1 Upper Status",
           "type": "Set",
           "display": "UPSStatus",
           "valid_set_values": [2]
         },
-        "main_ups_battery_remaining": {
-          "label": "Main UPS Battery",
+        "dome1_upper_ups_battery_remaining": {
+          "label": "D1 Upper UPS Battery",
           "type": "Range",
           "warn_limits": [100, 101],
           "unsafe_limits": [85, 101]
         },
-        "main_ups_battery_healthy": {
-          "label": "Main UPS Battery",
+        "dome1_upper_ups_battery_healthy": {
+          "label": "D1 Upper UPS Battery",
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
         },
-        "dome_ups_status": {
-          "label": "Dome UPS Status",
+        "dome1_lower_ups_status": {
+          "label": "D1 Lower UPS Status",
           "type": "Set",
           "display": "UPSStatus",
           "valid_set_values": [2]
         },
-        "dome_ups_battery_remaining": {
-          "label": "Dome UPS Battery",
+        "dome1_lower_ups_battery_remaining": {
+          "label": "D1 Lower UPS Battery",
           "type": "Range",
           "warn_limits": [100, 101],
           "unsafe_limits": [85, 101]
         },
-        "dome_ups_battery_healthy": {
-          "label": "Dome UPS Battery",
+        "dome1_lower_ups_battery_healthy": {
+          "label": "D1 Lower UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "dome2_upper_ups_status": {
+          "label": "D2 Upper Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "dome2_upper_ups_battery_remaining": {
+          "label": "D2 Upper UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "dome2_upper_ups_battery_healthy": {
+          "label": "D2 Upper UPS Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "dome2_lower_ups_status": {
+          "label": "D2 Lower UPS Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "dome2_lower_ups_battery_remaining": {
+          "label": "D2 Lower UPS Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "dome2_lower_ups_battery_healthy": {
+          "label": "D2 Lower UPS Battery",
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
@@ -558,9 +559,25 @@
         }
       }
     },
-    "rasa_diskspace": {
-      "label": "RASA Diskspace",
-      "daemon": "rasa_diskspace",
+    "clasp_diskspace": {
+      "label": "CLASP Diskspace",
+      "daemon": "clasp_diskspace",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 2199023255552],
+          "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "superwasp_diskspace": {
+      "label": "SuperWASP Diskspace",
+      "daemon": "superwasp_diskspace",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
