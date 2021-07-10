@@ -27,6 +27,14 @@
           "warn_limits": [0, 15],
           "unsafe_limits": [0, 25]
         },
+        "wind_gust": {
+          "label": "Wind Gust",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 50]
+        },
         "temperature": {
           "label": "Outside Temp.",
           "unit": "\u00B0C",
@@ -88,6 +96,14 @@
           "filter_invalid": true,
           "warn_limits": [0, 15],
           "unsafe_limits": [0, 25]
+        },
+        "wind_gust": {
+          "label": "Wind Gust",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 50]
         },
         "temperature": {
           "label": "Outside Temp.",
