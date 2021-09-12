@@ -476,6 +476,12 @@
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
+        },
+        "roofbattery": {
+          "label": "Roof Battery",
+          "type": "Range",
+          "warn_limits": [12, 13],
+          "unsafe_limits": [10, 14]
         }
       }
     },
