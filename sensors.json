@@ -480,8 +480,8 @@
         "roofbattery": {
           "label": "Roof Battery",
           "type": "Range",
-          "warn_limits": [12, 13],
-          "unsafe_limits": [10, 14]
+          "warn_limits": [12.5, 15],
+          "unsafe_limits": [12.5, 15]
         }
       }
     },
