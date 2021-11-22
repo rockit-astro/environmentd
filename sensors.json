@@ -373,10 +373,59 @@
           "type": "Range",
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
-        },
-        "mains_power": {
-          "label": "Mains Power",
+        }
+      }
+    },
+    "clasp_power": {
+      "label": "CLASP UPS",
+      "daemon": "clasp_power",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "ups1_status": {
+          "label": "UPS1 Status",
           "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups1_battery_remaining": {
+          "label": "UPS1 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups1_battery_healthy": {
+          "label": "UPS1 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "ups2_status": {
+          "label": "UPS2 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups2_battery_remaining": {
+          "label": "UPS2 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups2_battery_healthy": {
+          "label": "UPS2 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "light": {
+          "label": "Light",
+          "type": "Latest",
+          "display": "BoolPowerOnOff"
+        },
+        "dehumidifier": {
+          "label": "Dehumidifier",
+          "type": "Latest",
           "display": "BoolPowerOnOff"
         }
       }
