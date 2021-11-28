@@ -508,7 +508,7 @@
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
         },
-        "roofbattery": {
+        "roofbattery_mean": {
           "label": "Roof Battery",
           "type": "Range",
           "warn_limits": [12.5, 15],
@@ -623,8 +623,8 @@
           "type": "Latest",
           "display": "DiskBytes",
           "unit": "GiB",
-          "warn_limits": [214748364800, 2199023255552],
-          "unsafe_limits": [5368709120, 2199023255552]
+          "warn_limits": [214748364800, 10995116277760],
+          "unsafe_limits": [5368709120, 10995116277760]
         }
       }
     },
