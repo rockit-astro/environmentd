@@ -269,6 +269,20 @@
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
+        "internal_temp": {
+          "label": "GOTO Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "internal_humidity": {
+          "label": "GOTO Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
         "roomalert_temp": {
           "label": "Server Temp.",
           "unit": "\u00B0C",
@@ -278,28 +292,11 @@
           "label": "Server Hum.",
           "unit": "%RH",
           "type": "Range"
-        }
-      }
-    },
-    "goto_dome2_sht35": {
-      "label": "GOTO Dome 2 SHT35",
-      "daemon": "goto_dome2_sht35",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "temperature": {
-          "label": "GOTO Temp.",
-          "unit": "\u00B0C",
-          "type": "Range",
-          "filter_invalid": true,
-          "warn_limits": [3, 30]
         },
-        "relative_humidity": {
-          "label": "GOTO Hum.",
-          "unit": "%RH",
-          "type": "Range",
-          "filter_invalid": true,
-          "warn_limits": [0, 50]
+        "hatch_closed": {
+          "label": "Side Hatch",
+          "type": "Set",
+          "display": "BoolClosedOpen"
         }
       }
     },
