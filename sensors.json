@@ -609,9 +609,9 @@
         }
       }
     },
-    "clasp_diskspace": {
-      "label": "CLASP Diskspace",
-      "daemon": "clasp_diskspace",
+    "clasp_diskspace_1": {
+      "label": "CLASP DAS1 Diskspace",
+      "daemon": "clasp_diskspace_1",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -620,8 +620,24 @@
           "type": "Latest",
           "display": "DiskBytes",
           "unit": "GiB",
-          "warn_limits": [214748364800, 10995116277760],
-          "unsafe_limits": [5368709120, 10995116277760]
+          "warn_limits": [214748364800, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
+        }
+      }
+    },
+    "clasp_diskspace_2": {
+      "label": "CLASP DAS2 Diskspace",
+      "daemon": "clasp_diskspace_2",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
         }
       }
     },
