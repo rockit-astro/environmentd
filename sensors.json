@@ -433,20 +433,38 @@
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
-        "main_ups_status": {
-          "label": "UPS Status",
+        "ups1_status": {
+          "label": "UPS 1 Status",
           "type": "Set",
           "display": "UPSStatus",
           "valid_set_values": [2]
         },
-        "main_ups_battery_remaining": {
-          "label": "UPS Battery",
+        "ups1_battery_remaining": {
+          "label": "UPS 1 Battery",
           "type": "Range",
           "warn_limits": [100, 101],
           "unsafe_limits": [85, 101]
         },
-        "main_ups_battery_healthy": {
-          "label": "UPS Battery",
+        "ups1_battery_healthy": {
+          "label": "UPS 1 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "ups2_status": {
+          "label": "UPS 2 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups2_battery_remaining": {
+          "label": "UPS 2 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups2_battery_healthy": {
+          "label": "UPS 2 Battery",
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
