@@ -7,7 +7,7 @@ After=network-online.target
 [Service]
 Restart=on-failure
 Type=simple
-ExecStart=/usr/bin/env python3.6 -u /usr/bin/environmentd /etc/environmentd/sensors.json
+ExecStart=/usr/bin/env python3 -u /usr/bin/environmentd /etc/environmentd/sensors.json
 StandardOutput=syslog
 StandardError=syslog
 Environment="XDG_CONFIG_HOME=/var/tmp/daemon_home"
