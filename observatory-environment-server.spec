@@ -1,5 +1,5 @@
 Name:      observatory-environment-server
-Version:   20210726
+Version:   20220909
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick La Palma telescopes.

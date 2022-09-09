@@ -188,9 +188,9 @@
         }
       }
     },
-    "w1m_roomalert": {
-      "label": "W1m RoomAlert",
-      "daemon": "onemetre_roomalert",
+    "w1m_domealert": {
+      "label": "W1m DomeAlert",
+      "daemon": "onemetre_domealert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -231,67 +231,52 @@
         }
       }
     },
-    "goto_dome1_roomalert": {
-      "label": "GOTO Dome 1 RoomAlert",
-      "daemon": "goto_dome1_roomalert",
+    "goto_dome1_domealert": {
+      "label": "GOTO Dome 1 DomeAlert",
+      "daemon": "goto_dome1_domealert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
         "internal_temp": {
-          "label": "GOTO Temp.",
+          "label": "Internal Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
         "internal_humidity": {
-          "label": "GOTO Hum.",
+          "label": "Internal Humidity",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "roomalert_temp": {
-          "label": "Server Temp.",
-          "unit": "\u00B0C",
-          "type": "Range"
-        },
-        "roomalert_humidity": {
-          "label": "Server Hum.",
-          "unit": "%RH",
-          "type": "Range"
+        "hatch_closed": {
+          "label": "Side Hatch",
+          "type": "Set",
+          "display": "BoolClosedOpen"
         }
       }
     },
-    "goto_dome2_roomalert": {
-      "label": "GOTO Dome 2 RoomAlert",
-      "daemon": "goto_dome2_roomalert",
+    "goto_dome2_domealert": {
+      "label": "GOTO Dome 2 DomeAlert",
+      "daemon": "goto_dome2_domealert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
         "internal_temp": {
-          "label": "GOTO Temp.",
+          "label": "Internal Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
         "internal_humidity": {
-          "label": "GOTO Hum.",
+          "label": "Internal Humidity",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
-        },
-        "roomalert_temp": {
-          "label": "Server Temp.",
-          "unit": "\u00B0C",
-          "type": "Range"
-        },
-        "roomalert_humidity": {
-          "label": "Server Hum.",
-          "unit": "%RH",
-          "type": "Range"
         },
         "hatch_closed": {
           "label": "Side Hatch",
@@ -351,9 +336,9 @@
         }
       }
     },
-    "clasp_roomalert": {
-      "label": "CLASP RoomAlert",
-      "daemon": "clasp_roomalert",
+    "clasp_domealert": {
+      "label": "CLASP DomeAlert",
+      "daemon": "clasp_domealert",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
