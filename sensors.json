@@ -507,12 +507,20 @@
           "type": "Set",
           "display": "BoolHealthyUnhealthy",
           "valid_set_values": [true]
-        },
-        "roofbattery_mean": {
-          "label": "Roof Battery",
+        }
+      }
+    },
+    "superwasp_roof": {
+      "label": "SWASP Roof",
+      "daemon": "superwasp_roof",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "roof_battery_mean": {
+          "label": "Mean Battery Voltage",
           "type": "Range",
           "warn_limits": [12.5, 15],
-          "unsafe_limits": [12.5, 15]
+          "unsafe_limits": [10, 15]
         }
       }
     },
