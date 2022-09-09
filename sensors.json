@@ -644,9 +644,57 @@
         }
       }
     },
-    "superwasp_diskspace": {
-      "label": "SuperWASP Diskspace",
-      "daemon": "superwasp_diskspace",
+    "superwasp_diskspace_cam1": {
+      "label": "SuperWASP DAS1 Diskspace",
+      "daemon": "superwasp_diskspace_cam1",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 2199023255552],
+          "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "superwasp_diskspace_cam2": {
+      "label": "SuperWASP DAS2 Diskspace",
+      "daemon": "superwasp_diskspace_cam2",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 2199023255552],
+          "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "superwasp_diskspace_cam3": {
+      "label": "SuperWASP DAS3 Diskspace",
+      "daemon": "superwasp_diskspace_cam3",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 2199023255552],
+          "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "superwasp_diskspace_cam4": {
+      "label": "SuperWASP DAS4 Diskspace",
+      "daemon": "superwasp_diskspace_cam4",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
