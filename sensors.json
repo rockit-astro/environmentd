@@ -7,6 +7,7 @@
     "w1m_vaisala": {
       "label": "W1m Vaisala",
       "daemon": "onemetre_vaisala",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -77,6 +78,7 @@
     "goto_vaisala": {
       "label": "GOTO Vaisala",
       "daemon": "goto_vaisala",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -147,6 +149,7 @@
     "superwasp_aurora": {
       "label": "Aurora",
       "daemon": "superwasp_aurora",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -169,6 +172,7 @@
     "netping": {
       "label": "Network ping",
       "daemon": "observatory_network_ping",
+      "method": "last_measurement",
       "query_rate": 30,
       "stale_age": 300,
       "parameters": {
@@ -191,6 +195,7 @@
     "w1m_domealert": {
       "label": "W1m DomeAlert",
       "daemon": "onemetre_domealert",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -234,6 +239,7 @@
     "goto_dome1_domealert": {
       "label": "GOTO Dome 1 DomeAlert",
       "daemon": "goto_dome1_domealert",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -261,6 +267,7 @@
     "goto_dome2_domealert": {
       "label": "GOTO Dome 2 DomeAlert",
       "daemon": "goto_dome2_domealert",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -288,6 +295,7 @@
     "superwasp_roomalert": {
       "label": "SuperWASP RoomAlert",
       "daemon": "superwasp_roomalert",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -339,6 +347,7 @@
     "clasp_domealert": {
       "label": "CLASP DomeAlert",
       "daemon": "clasp_domealert",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -361,6 +370,7 @@
     "clasp_power": {
       "label": "CLASP UPS",
       "daemon": "clasp_power",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -415,6 +425,7 @@
     "w1m_power": {
       "label": "W1m UPS",
       "daemon": "onemetre_power",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -469,6 +480,7 @@
     "superwasp_power": {
       "label": "SWASP UPS",
       "daemon": "superwasp_power",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -513,10 +525,11 @@
     "superwasp_roof": {
       "label": "SWASP Roof",
       "daemon": "superwasp_roof",
+      "method": "status",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
-        "roof_battery_mean": {
+        "battery_voltage_mean": {
           "label": "Mean Battery Voltage",
           "type": "Range",
           "warn_limits": [12.5, 15],
@@ -527,6 +540,7 @@
     "goto_ups": {
       "label": "GOTO UPS",
       "daemon": "goto_ups",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {
@@ -607,6 +621,7 @@
     "w1m_diskspace": {
       "label": "W1m Diskspace",
       "daemon": "onemetre_tcs_diskspace",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -623,6 +638,7 @@
     "clasp_diskspace_1": {
       "label": "CLASP DAS1 Diskspace",
       "daemon": "clasp_diskspace_1",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -639,6 +655,7 @@
     "clasp_diskspace_2": {
       "label": "CLASP DAS2 Diskspace",
       "daemon": "clasp_diskspace_2",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -655,6 +672,7 @@
     "superwasp_diskspace_cam1": {
       "label": "SuperWASP DAS1 Diskspace",
       "daemon": "superwasp_diskspace_cam1",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -671,6 +689,7 @@
     "superwasp_diskspace_cam2": {
       "label": "SuperWASP DAS2 Diskspace",
       "daemon": "superwasp_diskspace_cam2",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -687,6 +706,7 @@
     "superwasp_diskspace_cam3": {
       "label": "SuperWASP DAS3 Diskspace",
       "daemon": "superwasp_diskspace_cam3",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -703,6 +723,7 @@
     "superwasp_diskspace_cam4": {
       "label": "SuperWASP DAS4 Diskspace",
       "daemon": "superwasp_diskspace_cam4",
+      "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
       "parameters": {
@@ -719,6 +740,7 @@
     "tng": {
       "label": "TNG",
       "daemon": "tng_log",
+      "method": "last_measurement",
       "query_rate": 120,
       "stale_age": 300,
       "parameters": {
@@ -745,6 +767,7 @@
     "robodimm": {
       "label": "RoboDIMM",
       "daemon": "ing_robodimm",
+      "method": "last_measurement",
       "query_rate": 120,
       "stale_age": 300,
       "parameters": {
@@ -759,6 +782,7 @@
     "ephem": {
       "label": "Ephemeris",
       "daemon": "observatory_ephemeris",
+      "method": "last_measurement",
       "query_rate": 30,
       "stale_age": 120,
       "parameters": {
@@ -784,6 +808,7 @@
     "rain": {
       "label": "Rain Detector",
       "daemon": "onemetre_rain",
+      "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
       "parameters": {

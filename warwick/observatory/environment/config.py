@@ -54,7 +54,7 @@ CONFIG_SCHEMA = {
             'additionalProperties': {
                 'type': 'object',
                 'additionalProperties': False,
-                'required': ['label', 'daemon', 'query_rate', 'stale_age', 'parameters'],
+                'required': ['label', 'daemon', 'method', 'query_rate', 'stale_age', 'parameters'],
                 'properties': {
                     'label': {
                         'type': 'string',
@@ -62,6 +62,9 @@ CONFIG_SCHEMA = {
                     'daemon': {
                         'type': 'string',
                         'daemon_name': True
+                    },
+                    'method': {
+                        'type': 'string'
                     },
                     'query_rate': {
                         'type': 'number',
@@ -203,6 +206,7 @@ class Config:
             self.watcher_config.append({
                 'name': watcher,
                 'daemon': getattr(daemons, watcher_json['daemon']),
+                'method': watcher_json['method'],
                 'label': watcher_json['label'],
                 'query_rate': watcher_json['query_rate'],
                 'stale_age': watcher_json['stale_age'],
@@ -213,7 +217,7 @@ class Config:
     def get_watchers(self):
         """Returns a list of PyroWatchers to be monitored"""
         def create_watcher(config):
-            return PyroWatcher(config['name'], config['daemon'], config['label'],
+            return PyroWatcher(config['name'], config['daemon'], config['method'], config['label'],
                                config['query_rate'], config['stale_age'], self.window_length,
                                config['parameters'], self.log_name)
 

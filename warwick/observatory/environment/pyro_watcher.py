@@ -25,11 +25,12 @@ from warwick.observatory.common import log
 
 
 class PyroWatcher:
-    """Watches the state of a Pyro daemon implementing the last_measurement convention"""
-    def __init__(self, daemon_name, daemon, label, query_delay, max_data_gap, window_length,
+    """Watches the state of a Pyro daemon"""
+    def __init__(self, daemon_name, daemon, method, label, query_delay, max_data_gap, window_length,
                  parameters, log_name):
         self.daemon_name = daemon_name
         self._daemon = daemon
+        self._method = method
         self._label = label
         self._query_delay = query_delay
         self._max_data_gap = datetime.timedelta(seconds=max_data_gap)
@@ -56,7 +57,7 @@ class PyroWatcher:
                 # The delay between queries is greater than the comm timeout
                 # so there is no point caching the proxy between loops
                 with self._daemon.connect() as daemon:
-                    data = daemon.last_measurement()
+                    data = getattr(daemon, self._method)()
 
                 if data is not None:
                     # Pyro doesn't deserialize dates, so we manually manage this.
