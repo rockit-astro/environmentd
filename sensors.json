@@ -2,7 +2,7 @@
   "daemon": "observatory_environment",
   "log_name": "environmentd",
   "window_length": 1200,
-  "control_machines": ["OneMetreDome", "OneMetreTCS", "CLASPTCS", "SWASPTCS", "GOTOServer"],
+  "control_machines": ["OneMetreDome", "OneMetreTCS", "CLASPTCS", "SWASPTCS", "HalfMetreTCS", "GOTOServer"],
   "watchers": {
     "w1m_vaisala": {
       "label": "W1m Vaisala",
@@ -146,29 +146,6 @@
         }
       }
     },
-    "superwasp_aurora": {
-      "label": "Aurora",
-      "daemon": "superwasp_aurora",
-      "method": "last_measurement",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "clarity": {
-          "label": "Sky Clarity",
-          "unit": "\u00B0C",
-          "type": "Latest",
-          "warn_limits": [40, 60]
-        },
-        "light_intensity": {
-          "label": "Light Intensity",
-          "type": "Latest"
-        },
-        "rain_intensity": {
-          "label": "Rain Intensity",
-          "type": "Latest"
-        }
-      }
-    },
     "netping": {
       "label": "Network ping",
       "daemon": "observatory_network_ping",
@@ -292,9 +269,9 @@
         }
       }
     },
-    "superwasp_roomalert": {
-      "label": "SuperWASP RoomAlert",
-      "daemon": "superwasp_roomalert",
+    "halfmetre_domealert": {
+      "label": "Half Metre DomeAlert",
+      "daemon": "halfmetre_domealert",
       "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
@@ -313,34 +290,19 @@
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "cam_room_temp": {
-          "label": "Cam. Room Temp.",
+        "tel_room_temp": {
+          "label": "Tel. Room Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
-        "cam_room_humidity": {
-          "label": "Cam. Room Hum.",
+        "tel_room_humidity": {
+          "label": "Tel. Room Hum.",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
-        },
-        "roomalert_temp": {
-          "label": "RoomAlert Temp.",
-          "unit": "\u00B0C",
-          "type": "Range"
-        },
-        "roomalert_humidity": {
-          "label": "RoomAlert Hum.",
-          "unit": "%RH",
-          "type": "Range"
-        },
-        "cam_rack_temp": {
-          "label": "Cam. Rack Temp.",
-          "unit": "\u00B0C",
-          "type": "Range"
         }
       }
     },
@@ -352,14 +314,28 @@
       "stale_age": 30,
       "parameters": {
         "internal_temperature": {
-          "label": "Internal Temp.",
+          "label": "CLASP Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
         "internal_humidity": {
-          "label": "Internal Hum.",
+          "label": "CLASP Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "superwasp_temperature": {
+          "label": "SWASP Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "superwasp_humidity": {
+          "label": "SWASP Hum.",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
@@ -477,54 +453,9 @@
         }
       }
     },
-    "superwasp_power": {
-      "label": "SWASP UPS",
-      "daemon": "superwasp_power",
-      "method": "last_measurement",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "ups1_status": {
-          "label": "UPS 1 Status",
-          "type": "Set",
-          "display": "UPSStatus",
-          "valid_set_values": [2]
-        },
-        "ups1_battery_remaining": {
-          "label": "UPS 1 Battery",
-          "type": "Range",
-          "warn_limits": [100, 101],
-          "unsafe_limits": [85, 101]
-        },
-        "ups1_battery_healthy": {
-          "label": "UPS 1 Battery",
-          "type": "Set",
-          "display": "BoolHealthyUnhealthy",
-          "valid_set_values": [true]
-        },
-       "ups2_status": {
-          "label": "UPS 2 Status",
-          "type": "Set",
-          "display": "UPSStatus",
-          "valid_set_values": [2]
-        },
-        "ups2_battery_remaining": {
-          "label": "UPS 2 Battery",
-          "type": "Range",
-          "warn_limits": [100, 101],
-          "unsafe_limits": [85, 101]
-        },
-        "ups2_battery_healthy": {
-          "label": "UPS 2 Battery",
-          "type": "Set",
-          "display": "BoolHealthyUnhealthy",
-          "valid_set_values": [true]
-        }
-      }
-    },
-    "superwasp_roof": {
-      "label": "SWASP Roof",
-      "daemon": "superwasp_roof",
+    "halfmetre_roof": {
+      "label": "Half Metre Roof",
+      "daemon": "halfmetre_roof",
       "method": "status",
       "query_rate": 10,
       "stale_age": 30,
@@ -761,21 +692,6 @@
           "type": "Latest",
           "filter_invalid": true,
           "unit": "W/m\u00B2"
-        }
-      }
-    },
-    "robodimm": {
-      "label": "RoboDIMM",
-      "daemon": "ing_robodimm",
-      "method": "last_measurement",
-      "query_rate": 120,
-      "stale_age": 300,
-      "parameters": {
-        "seeing": {
-          "label": "Seeing.",
-          "type": "Latest",
-          "filter_invalid": true,
-          "unit": "\""
         }
       }
     },
