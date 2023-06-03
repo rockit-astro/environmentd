@@ -1,8 +1,8 @@
 Name:      observatory-environment-server
-Version:   20230205
+Version:   20230603
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
-Summary:   Environment daemon for the Warwick La Palma telescopes.
+Summary:   Environment daemon for the Warwick telescopes.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch
@@ -17,15 +17,15 @@ mkdir -p %{buildroot}/var/tmp/daemon_home/astropy
 mkdir -p %{buildroot}%{_sysconfdir}/environmentd/
 
 %{__install} %{_sourcedir}/environmentd %{buildroot}%{_bindir}
-%{__install} %{_sourcedir}/environmentd.service %{buildroot}%{_unitdir}
-%{__install} %{_sourcedir}/sensors.json %{buildroot}%{_sysconfdir}/environmentd/
+%{__install} %{_sourcedir}/environmentd@.service %{buildroot}%{_unitdir}
+%{__install} %{_sourcedir}/lapalma.json %{buildroot}%{_sysconfdir}/environmentd/
 
 %files
 %defattr(0755,root,root,-)
 %{_bindir}/environmentd
 %defattr(-,root,root,-)
-%{_unitdir}/environmentd.service
-%{_sysconfdir}/environmentd/sensors.json
+%{_unitdir}/environmentd@.service
+%{_sysconfdir}/environmentd/lapalma.json
 %dir /var/tmp/daemon_home/astropy
 
 %changelog

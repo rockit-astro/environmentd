@@ -1,0 +1,157 @@
+{
+  "daemon": "warwick_environment",
+  "log_name": "environmentd@warwick",
+  "window_length": 1200,
+  "control_machines": ["WarwickTCS", "WarwickDome"],
+  "watchers": {
+    "vaisala": {
+      "label": "Vaisala",
+      "daemon": "warwick_vaisala",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "filter_invalid": true,
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "wind_gust": {
+          "label": "Wind Gust",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "relative_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "pressure": {
+          "label": "Pressure",
+          "unit": "hPa",
+          "type": "Latest",
+          "filter_invalid": true
+        },
+        "accumulated_rain": {
+          "label": "Accumulated Rain.",
+          "unit": "mm",
+          "type": "Range",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 0]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [10, 100],
+          "unsafe_limits": [5, 100]
+        }
+      }
+    },
+    "internal": {
+      "label": "Dome",
+      "daemon": "warwick_rhusb",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "temperature": {
+          "label": "Dome Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "humidity": {
+          "label": "Dome Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        }
+      }
+    },
+    "rain": {
+      "label": "Rain Detectors",
+      "daemon": "warwick_rain",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "unsafe_sensors": {
+          "label": "Triggered",
+          "type": "Latest",
+          "unsafe_limits": [0, 0]
+        }
+      }
+    },
+    "cloudwatcher": {
+      "label": "Cloud Watcher",
+      "daemon": "warwick_cloudwatcher",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "sky_temp": {
+          "label": "Sky Temp.",
+          "type": "Latest",
+          "unit": "\u00B0C",
+          "warn_limits": [-100, -5]
+        }
+      }
+    },
+    "ephem": {
+      "label": "Ephemeris",
+      "daemon": "warwick_ephemeris",
+      "method": "last_measurement",
+      "query_rate": 30,
+      "stale_age": 120,
+      "parameters": {
+        "sun_alt": {
+          "label": "Sun Alt.",
+          "type": "Latest",
+          "unit": "\u00B0",
+          "warn_limits": [-90, -10],
+          "unsafe_limits": [-90, 5]
+        },
+        "moon_alt": {
+          "label": "Moon Alt.",
+          "type": "Latest",
+          "unit": "\u00B0"
+        },
+        "moon_percent_illumination": {
+          "label": "Moon Illumination",
+          "type": "Latest",
+          "unit": "%"
+        }
+      }
+    }
+  }
+}

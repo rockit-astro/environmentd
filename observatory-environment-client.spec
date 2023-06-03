@@ -1,8 +1,8 @@
 Name:      observatory-environment-client
-Version:   20210726
+Version:   20230603
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
-Summary:   Environment client for the Warwick La Palma telescopes.
+Summary:   Environment client for the Warwick telescopes.
 License:   GPL-3.0
 Group:     Unspecified
 BuildArch: noarch

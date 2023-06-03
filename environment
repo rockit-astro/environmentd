@@ -20,11 +20,13 @@
 # pylint: disable=bare-except
 
 import datetime
+import glob
 import json
 import os
 import sys
 import Pyro4
-from warwick.observatory.common import daemons, TFmt
+from warwick.observatory.common import TFmt
+from warwick.observatory.environment import Config
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
 sys.excepthook = Pyro4.util.excepthook
@@ -64,10 +66,10 @@ SET_LABELS = {
 }
 
 
-def print_status():
+def print_status(daemon):
     """Prints the latest environment data in human-readable form"""
     try:
-        with daemons.observatory_environment.connect() as environment:
+        with daemon.connect() as environment:
             data = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -103,10 +105,10 @@ def print_status():
     return 0
 
 
-def print_json():
+def print_json(daemon):
     """Prints the latest environment data in machine-readable form"""
     try:
-        with daemons.observatory_environment.connect() as environment:
+        with daemon.connect() as environment:
             status = environment.status()
     except Pyro4.errors.CommunicationError:
         print('error: unable to communicate with the environment daemon')
@@ -238,10 +240,23 @@ if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.exit(print_usage(SCRIPT_NAME))
 
+    if 'ENVIRONMENTD_CONFIG_PATH' in os.environ:
+        config = Config(os.environ['ENVIRONMENTD_CONFIG_PATH'])
+    else:
+        # Load the config file defined in the ENVIRONMENTD_CONFIG_PATH environment variable or from the
+        # default system location (/etc/environmentd/). Exit with an error if zero or multiple are found.
+        files = glob.glob("/etc/environmentd/*.json")
+        if len(files) != 1:
+            print('error: failed to guess the default config file. ' +
+                  'Run as ENVIRONMENTD_CONFIG_PATH=/path/to/config.json environment <command>')
+            sys.exit(1)
+
+        config = Config(files[0])
+
     if sys.argv[1] == 'status':
-        sys.exit(print_status())
+        sys.exit(print_status(config.daemon))
     elif sys.argv[1] == 'json':
-        sys.exit(print_json())
+        sys.exit(print_json(config.daemon))
 
     # Command not found
     sys.exit(print_usage(SCRIPT_NAME))

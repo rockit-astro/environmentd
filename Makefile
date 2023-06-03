@@ -12,3 +12,12 @@ all:
 	mv build/noarch/*.rpm .
 	rm -rf build
 
+install:
+	@python3 setup.py install
+	@cp environmentd environment /bin/
+	@cp environmentd@.service /usr/lib/systemd/system/
+	@cp completion/environment /etc/bash_completion.d/
+	@install -d /etc/environmentd
+	@echo ""
+	@echo "Installed server, client, and service files."
+	@echo "Now copy the relevant json config files to /etc/environmentd/"

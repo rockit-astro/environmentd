@@ -1,5 +1,5 @@
 [Unit]
-Description=Daemon for exposing recent dome environment conditions via Pyro.
+Description=Daemon for exposing recent environment conditions via Pyro.
 After=syslog.target
 Wants=network-online.target
 After=network-online.target
@@ -7,9 +7,7 @@ After=network-online.target
 [Service]
 Restart=on-failure
 Type=simple
-ExecStart=/usr/bin/env python3 -u /usr/bin/environmentd /etc/environmentd/sensors.json
-StandardOutput=syslog
-StandardError=syslog
+ExecStart=/usr/bin/env python3 -u /usr/bin/environmentd /etc/environmentd/%i.json
 Environment="XDG_CONFIG_HOME=/var/tmp/daemon_home"
 Environment="XDG_CACHE_HOME=/var/tmp/daemon_home"
 
