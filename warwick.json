@@ -41,16 +41,16 @@
           "unit": "\u00B0C",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [3, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [0, 30],
+          "unsafe_limits": [-5, 50]
         },
         "relative_humidity": {
           "label": "Outside Hum.",
           "unit": "%RH",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [0, 50],
-          "unsafe_limits": [0, 75]
+          "warn_limits": [0, 70],
+          "unsafe_limits": [0, 90]
         },
         "pressure": {
           "label": "Pressure",
@@ -70,8 +70,8 @@
           "unit": "\u00B0C",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [10, 100],
-          "unsafe_limits": [5, 100]
+          "warn_limits": [5, 100],
+          "unsafe_limits": [2.5, 100]
         }
       }
     },
@@ -86,15 +86,15 @@
           "label": "Dome Temp.",
           "unit": "\u00B0C",
           "type": "Range",
-          "warn_limits": [3, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [0, 30],
+          "unsafe_limits": [-5, 50]
         },
         "humidity": {
           "label": "Dome Hum.",
           "unit": "%RH",
           "type": "Range",
-          "warn_limits": [0, 50],
-          "unsafe_limits": [0, 75]
+          "warn_limits": [0, 70],
+          "unsafe_limits": [0, 90]
         }
       }
     },
@@ -124,6 +124,23 @@
           "type": "Latest",
           "unit": "\u00B0C",
           "warn_limits": [-100, -5]
+        }
+      }
+    },
+    "diskspace": {
+      "label": "Diskspace",
+      "daemon": "warwick_diskspace",
+      "method": "last_measurement",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [21474836480, 1099511627776],
+          "unsafe_limits": [5368709120, 1099511627776]
         }
       }
     },
