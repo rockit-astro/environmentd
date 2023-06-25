@@ -453,6 +453,51 @@
         }
       }
     },
+    "halfmetre_power": {
+      "label": "Halfmetre UPS",
+      "daemon": "halfmetre_power",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "ups1_status": {
+          "label": "UPS1 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups1_battery_remaining": {
+          "label": "UPS1 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups1_battery_healthy": {
+          "label": "UPS1 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        },
+        "ups2_status": {
+          "label": "UPS2 Status",
+          "type": "Set",
+          "display": "UPSStatus",
+          "valid_set_values": [2]
+        },
+        "ups2_battery_remaining": {
+          "label": "UPS2 Battery",
+          "type": "Range",
+          "warn_limits": [100, 101],
+          "unsafe_limits": [85, 101]
+        },
+        "ups2_battery_healthy": {
+          "label": "UPS2 Battery",
+          "type": "Set",
+          "display": "BoolHealthyUnhealthy",
+          "valid_set_values": [true]
+        }
+      }
+    },
     "halfmetre_roof": {
       "label": "Half Metre Roof",
       "daemon": "halfmetre_roof",
@@ -665,6 +710,23 @@
           "unit": "GiB",
           "warn_limits": [214748364800, 2199023255552],
           "unsafe_limits": [5368709120, 2199023255552]
+        }
+      }
+    },
+    "halfmetre_diskspace": {
+      "label": "Half metre Diskspace",
+      "daemon": "halfmetre_diskspace",
+      "method": "last_measurement",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [21474836480, 5497558138880],
+          "unsafe_limits": [5368709120, 5497558138880]
         }
       }
     },
