@@ -146,6 +146,96 @@
         }
       }
     },
+    "halfmetre_vaisala": {
+      "label": "Halfmetre Vaisala",
+      "daemon": "halfmetre_vaisala",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "filter_invalid": true,
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "wind_gust": {
+          "label": "Wind Gust",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "relative_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "pressure": {
+          "label": "Pressure",
+          "unit": "hPa",
+          "type": "Latest",
+          "filter_invalid": true
+        },
+        "accumulated_rain": {
+          "label": "Accumulated Rain.",
+          "unit": "mm",
+          "type": "Range",
+          "filter_invalid": true,
+          "unsafe_limits": [0, 0]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [10, 100],
+          "unsafe_limits": [5, 100]
+        },
+        "rg11_unsafe": {
+          "label": "Rain Sen. Wet",
+          "type": "Latest",
+          "unsafe_limits": [0, 0]
+        }
+      }
+    },
+    "cloudwatcher": {
+      "label": "Cloudwatcher",
+      "daemon": "halfmetre_cloudwatcher",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "sky_temp": {
+          "label": "Sky Temp",
+          "unit": "\u00B0C",
+          "type": "Range"
+        }
+      }
+    },
     "netping": {
       "label": "Network ping",
       "daemon": "observatory_network_ping",
@@ -611,26 +701,9 @@
         }
       }
     },
-    "clasp_diskspace_1": {
-      "label": "CLASP DAS1 Diskspace",
-      "daemon": "clasp_diskspace_1",
-      "method": "last_measurement",
-      "query_rate": 60,
-      "stale_age": 180,
-      "parameters": {
-        "data_fs_available_bytes": {
-          "label": "Available",
-          "type": "Latest",
-          "display": "DiskBytes",
-          "unit": "GiB",
-          "warn_limits": [214748364800, 21990232555520],
-          "unsafe_limits": [5368709120, 21990232555520]
-        }
-      }
-    },
-    "clasp_diskspace_2": {
-      "label": "CLASP DAS2 Diskspace",
-      "daemon": "clasp_diskspace_2",
+    "clasp_diskspace": {
+      "label": "CLASP Diskspace",
+      "daemon": "clasp_diskspace",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,

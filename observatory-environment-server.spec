@@ -1,5 +1,5 @@
 Name:      observatory-environment-server
-Version:   20230603
+Version:   20230630
 Release:   0
 Url:       https://github.com/warwick-one-metre/environmentd
 Summary:   Environment daemon for the Warwick telescopes.
