@@ -4,25 +4,22 @@
 
 `environment` is a commandline utility that queries the environment daemon.
 
-`python3-warwick-observatory-environment` is a python module with the common environment code.
-
-See [Software Infrastructure](https://github.com/warwick-one-metre/docs/wiki/Software-Infrastructure) for an overview of the observatory software architecture and instructions for developing and deploying the code.
-
 ### Configuration
 
-Configuration for the shared site daemon is read from `/etc/environmentd/sensors.json` that is specified when launching the server.
+Configuration is read from json files that are installed by default to `/etc/environmentd`.
+A configuration file is specified when launching the server, and the `environment` frontend will search this location when launched.
 
 The configuration options are:
 ```python
 {
-  "daemon": "observatory_environment", # Run the server as this daemon. Daemon types are registered in `warwick.observatory.common.daemons`.
+  "daemon": "observatory_environment", # Run the server as this daemon. Daemon types are registered in `rockit.common.daemons`.
   "log_name": "environmentd", # The name to use when writing messages to the observatory log.
   "window_length": 1200, # Sliding time window to evaluate conditions over (seconds).
-  "control_machines": ["OneMetreDome", "OneMetreTCS", "RASAMain"],  # Machine names that are allowed to clear environment history. Machine names are registered in `warwick.observatory.common.IP`.
+  "control_machines": ["OneMetreDome", "OneMetreTCS"],  # Machine names that are allowed to clear environment history. Machine names are registered in `rockit.common.IP`.
   "watchers": {
     "w1m_vaisala": { # Each watcher specifies a daemon service that should be queried.
       "label": "W1m Vaisala", # Human readable label for this environment sensor.
-      "daemon": "onemetre_vaisala", # Daemon to query. Daemon types are registered in `warwick.observatory.common.daemons`.
+      "daemon": "onemetre_vaisala", # Daemon to query. Daemon types are registered in `rockit.common.daemons`.
       "query_rate": 10, # Rate to query environment state (seconds).
       "stale_age": 30, # Environment state older than this is considered to be invalid (seconds).
       "parameters": { # Each parameter corresponds to an entry in the dictionary returned by the `last_measurement` method.
@@ -43,30 +40,31 @@ The configuration options are:
 ```
 ### Initial Installation
 
-The automated packaging scripts will push 3 RPM packages to the observatory package repository:
+The automated packaging scripts will push 5 RPM packages to the observatory package repository:
 
-| Package           | Description |
-| ----------------- | ------ |
-| observatory-environment-server | Contains the `environmentd` server and systemd service file. |
-| observatory-environment-client | Contains the `environment` commandline utility for quering the environment server. |
-| python3-warwick-observatory-environment | Contains the python module with shared code. |
-
-The `observatory-environment-server` and `observatory-environment-client` packages should be installed on the `gotoserver` machine.
-The `observatory-environment-client` package can be installed on any other machine where you would like to query status.
+| Package                         | Description                                                                         |
+|---------------------------------|-------------------------------------------------------------------------------------|
+| rockit-environment-server       | Contains the `environmentd` server and systemd service file.                        |
+| rockit-environment-client       | Contains the `environment` commandline utility for querying the environment server. |
+| rockit-environment-data-lapalma | Contains the json configuration for the La Palma telescopes.                        |
+| rockit-environment-data-warwick | Contains the json configuration for the Windmill Hill observatory.                  |
+| python3-rockit-environment      | Contains the python module with shared code.                                        |
 
 After installing the server package, the systemd service should be enabled:
 
 ```
-sudo systemctl enable environmentd
+sudo systemctl enable --now environmentd@<config>
 sudo systemctl start environmentd
 ```
+
+where `config` is the name of the json file for the appropriate site.
 
 Now open a port in the firewall:
 ```
 sudo firewall-cmd --zone=public --add-port=<port>/tcp --permanent
 sudo firewall-cmd --reload
 ```
-where `port` is the port defined in `warwick.observatory.common.daemons` for the daemon specified in the server config.
+where `port` is the port defined in `rockit.common.daemons` for the daemon specified in the server config.
 
 ### Upgrading Installation
 
@@ -79,16 +77,13 @@ sudo yum update
 
 The daemon should then be restarted to use the newly installed code:
 ```
-sudo systemctl stop environmentd
-sudo systemctl start environmentd
+sudo systemctl restart environmentd@<config>
 ```
 
 ### Testing Locally
 
 The server and client can be run directly from a git clone:
 ```
-./environmentd sensors.json
-./environment status
+./environmentd lapalma.json
+ENVIRONMENTD_CONFIG_PATH=./lapalma.json ./environment status
 ```
-
-`environment` currently hardcodes queries to the `observatory_environment` daemon. You may need to manually replace this with e.g. `localhost_test` when testing locally.

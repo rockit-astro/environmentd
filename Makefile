@@ -6,14 +6,18 @@ RPMBUILD = rpmbuild --define "_topdir %(pwd)/build" \
 
 all:
 	mkdir -p build
-	${RPMBUILD} -ba observatory-environment-server.spec
-	${RPMBUILD} -ba observatory-environment-client.spec
-	${RPMBUILD} -ba python3-warwick-observatory-environment.spec
+	date --utc +%Y%m%d%H%M%S > VERSION
+	${RPMBUILD} --define "_version %(cat VERSION)" -ba rockit-environment.spec
+	${RPMBUILD} --define "_version %(cat VERSION)" -ba python3-rockit-environment.spec
+
 	mv build/noarch/*.rpm .
-	rm -rf build
+	rm -rf build VERSION
 
 install:
-	@python3 setup.py install
+	@date --utc +%Y%m%d%H%M%S > VERSION
+	@python3 -m build --outdir .
+	@sudo pip3 install rockit.environment-$$(cat VERSION)-py3-none-any.whl
+	@rm VERSION
 	@cp environmentd environment /bin/
 	@cp environmentd@.service /usr/lib/systemd/system/
 	@cp completion/environment /etc/bash_completion.d/

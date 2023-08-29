@@ -1,18 +1,18 @@
 #
-# This file is part of environmentd
+# This file is part of the Robotic Observatory Control Kit (rockit)
 #
-# environmentd is free software: you can redistribute it and/or modify
+# rockit is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# environmentd is distributed in the hope that it will be useful,
+# rockit is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with environmentd.  If not, see <http://www.gnu.org/licenses/>.
+# along with rockit.  If not, see <http://www.gnu.org/licenses/>.
 
 """Class used for aggregating environment sensor status over a time range"""
 
@@ -85,8 +85,7 @@ class AggregateParameter:
         # Discard any measurements that are flagged as ignored
         # This allows "no value" measurements to be not counted as bad
         if self._ignore_values:
-            measurements = [m for m in measurements \
-                if m[self._measurement_name] not in self._ignore_values]
+            measurements = [m for m in measurements if m[self._measurement_name] not in self._ignore_values]
 
         measurement_start = measurements[0]['date'] if measurements else datetime.datetime.min
         measurement_end = measurements[-1]['date'] if measurements else datetime.datetime.min
@@ -165,8 +164,7 @@ class AggregateParameter:
                 ret['unsafe'] = ret['latest'] < self._limits[0] or ret['latest'] > self._limits[1]
 
             if self._warn_limits and ret['current']:
-                ret['warning'] = ret['latest'] < self._warn_limits[0] \
-                    or ret['latest'] > self._warn_limits[1]
+                ret['warning'] = ret['latest'] < self._warn_limits[0] or ret['latest'] > self._warn_limits[1]
 
         return ret
 

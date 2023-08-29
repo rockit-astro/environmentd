@@ -1,18 +1,18 @@
 #
-# This file is part of environmentd
+# This file is part of the Robotic Observatory Control Kit (rockit)
 #
-# environmentd is free software: you can redistribute it and/or modify
+# rockit is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# environmentd is distributed in the hope that it will be useful,
+# rockit is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with environmentd.  If not, see <http://www.gnu.org/licenses/>.
+# along with rockit.  If not, see <http://www.gnu.org/licenses/>.
 
 """Class used for aggregating daemon state over time"""
 
@@ -21,7 +21,7 @@ import datetime
 import math
 import threading
 import time
-from warwick.observatory.common import log
+from rockit.common import log
 
 
 class PyroWatcher:
@@ -45,9 +45,7 @@ class PyroWatcher:
         self._data_lock = threading.Lock()
         self._data = deque(maxlen=math.ceil(queue_len))
 
-        runloop = threading.Thread(target=self.__run_thread)
-        runloop.daemon = True
-        runloop.start()
+        threading.Thread(target=self.__run_thread, daemon=True).start()
 
     def __run_thread(self):
         """Run loop for monitoring the hardware daemon"""
@@ -63,28 +61,25 @@ class PyroWatcher:
                     # Pyro doesn't deserialize dates, so we manually manage this.
                     data['date'] = datetime.datetime.strptime(data['date'], '%Y-%m-%dT%H:%M:%SZ')
                     if now() - data['date'] > self._max_data_gap:
-                        print('{} WARNING: received stale data from {}: {}'
-                              .format(now(), self.daemon_name, data['date']))
+                        print(f'{now()} WARNING: received stale data from {self.daemon_name}: {data["date"]}')
 
                     with self._data_lock:
                         self._data.append(data)
 
                         if self._last_query_failed or len(self._data) == 1:
                             prefix = 'Restored' if self._last_query_failed else 'Established'
-                            log.info(self._log_name, prefix + ' contact with ' + self.daemon_name)
+                            log.info(self._log_name, f'{prefix} contact with {self.daemon_name}')
 
                     self._last_query_failed = False
                 else:
-                    print('{} WARNING: received empty data from {}'
-                          .format(now(), self.daemon_name))
+                    print(f'{now()} WARNING: received empty data from {self.daemon_name}')
                     if not self._last_query_failed:
-                        log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
+                        log.error(self._log_name, f'Lost contact with {self.daemon_name}')
                     self._last_query_failed = True
             except Exception as exception:
-                print('{} ERROR: failed to query from {}: {}'
-                      .format(now(), self.daemon_name, str(exception)))
+                print(f'{now()} ERROR: failed to query from {self.daemon_name}: {exception}')
                 if not self._last_query_failed:
-                    log.error(self._log_name, 'Lost contact with ' + self.daemon_name)
+                    log.error(self._log_name, f'Lost contact with {self.daemon_name}')
 
                 self._last_query_failed = True
             time.sleep(self._query_delay)
@@ -102,8 +97,7 @@ class PyroWatcher:
 
         return {
             'label': self._label,
-            'parameters': {p.name: p.aggregate(measurements, stale_threshold)
-                           for p in self._parameters}
+            'parameters': {p.name: p.aggregate(measurements, stale_threshold) for p in self._parameters}
         }
 
     def clear_history(self):
