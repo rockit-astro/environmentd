@@ -72,6 +72,11 @@
           "filter_invalid": true,
           "warn_limits": [5, 100],
           "unsafe_limits": [2.5, 100]
+        },
+        "rg11_unsafe": {
+          "label": "Rain Sen. Wet",
+          "type": "Latest",
+          "unsafe_limits": [0, 0]
         }
       }
     },
@@ -95,20 +100,6 @@
           "type": "Range",
           "warn_limits": [0, 70],
           "unsafe_limits": [0, 90]
-        }
-      }
-    },
-    "rain": {
-      "label": "Rain Detectors",
-      "daemon": "warwick_rain",
-      "method": "last_measurement",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "unsafe_sensors": {
-          "label": "Triggered",
-          "type": "Latest",
-          "unsafe_limits": [0, 0]
         }
       }
     },
