@@ -701,9 +701,9 @@
         }
       }
     },
-    "clasp_diskspace": {
-      "label": "CLASP Diskspace",
-      "daemon": "clasp_diskspace",
+    "clasp_diskspace_cam1": {
+      "label": "CLASP CAM1 Diskspace",
+      "daemon": "clasp_diskspace_cam1",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -718,9 +718,26 @@
         }
       }
     },
-    "superwasp_diskspace_cam1": {
+    "clasp_diskspace_cam2": {
+      "label": "CLASP CAM2 Diskspace",
+      "daemon": "clasp_diskspace_cam2",
+      "method": "last_measurement",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [214748364800, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
+        }
+      }
+    },
+    "superwasp_diskspace_das1": {
       "label": "SuperWASP DAS1 Diskspace",
-      "daemon": "superwasp_diskspace_cam1",
+      "daemon": "superwasp_diskspace_das1",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -730,14 +747,14 @@
           "type": "Latest",
           "display": "DiskBytes",
           "unit": "GiB",
-          "warn_limits": [214748364800, 2199023255552],
-          "unsafe_limits": [5368709120, 2199023255552]
+          "warn_limits": [214748364800, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
         }
       }
     },
-    "superwasp_diskspace_cam2": {
+    "superwasp_diskspace_das2": {
       "label": "SuperWASP DAS2 Diskspace",
-      "daemon": "superwasp_diskspace_cam2",
+      "daemon": "superwasp_diskspace_das2",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -747,42 +764,8 @@
           "type": "Latest",
           "display": "DiskBytes",
           "unit": "GiB",
-          "warn_limits": [214748364800, 2199023255552],
-          "unsafe_limits": [5368709120, 2199023255552]
-        }
-      }
-    },
-    "superwasp_diskspace_cam3": {
-      "label": "SuperWASP DAS3 Diskspace",
-      "daemon": "superwasp_diskspace_cam3",
-      "method": "last_measurement",
-      "query_rate": 60,
-      "stale_age": 180,
-      "parameters": {
-        "data_fs_available_bytes": {
-          "label": "Available",
-          "type": "Latest",
-          "display": "DiskBytes",
-          "unit": "GiB",
-          "warn_limits": [214748364800, 2199023255552],
-          "unsafe_limits": [5368709120, 2199023255552]
-        }
-      }
-    },
-    "superwasp_diskspace_cam4": {
-      "label": "SuperWASP DAS4 Diskspace",
-      "daemon": "superwasp_diskspace_cam4",
-      "method": "last_measurement",
-      "query_rate": 60,
-      "stale_age": 180,
-      "parameters": {
-        "data_fs_available_bytes": {
-          "label": "Available",
-          "type": "Latest",
-          "display": "DiskBytes",
-          "unit": "GiB",
-          "warn_limits": [214748364800, 2199023255552],
-          "unsafe_limits": [5368709120, 2199023255552]
+          "warn_limits": [214748364800, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
         }
       }
     },
