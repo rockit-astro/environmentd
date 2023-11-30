@@ -130,8 +130,8 @@
           "type": "Latest",
           "display": "DiskBytes",
           "unit": "GiB",
-          "warn_limits": [21474836480, 1099511627776],
-          "unsafe_limits": [5368709120, 1099511627776]
+          "warn_limits": [21474836480, 10995116277760],
+          "unsafe_limits": [5368709120, 10995116277760]
         }
       }
     },
