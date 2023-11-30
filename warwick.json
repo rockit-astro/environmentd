@@ -147,7 +147,7 @@
           "type": "Latest",
           "unit": "\u00B0",
           "warn_limits": [-90, -10],
-          "unsafe_limits": [-90, 5]
+          "unsafe_limits": [-90, 20]
         },
         "moon_alt": {
           "label": "Moon Alt.",
