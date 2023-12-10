@@ -1,0 +1,133 @@
+{
+  "daemon": "ngts_environment",
+  "log_name": "environmentd@ngts",
+  "window_length": 1200,
+  "control_machines": ["NGTSDASNUC"],
+  "watchers": {
+    "sentinel": {
+      "label": "Sentinel",
+      "daemon": "ngts_sentinel",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 60,
+      "parameters": {
+        "wind_speed": {
+          "label": "Wind",
+          "unit": "km/h",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 30],
+          "unsafe_limits": [0, 40]
+        },
+        "median_wind_speed": {
+          "label": "Median Wind",
+          "unit": "km/h",
+          "type": "Median",
+          "median_key": "wind_speed",
+          "filter_invalid": true,
+          "warn_limits": [0, 15],
+          "unsafe_limits": [0, 25]
+        },
+        "temperature": {
+          "label": "Outside Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [3, 30],
+          "unsafe_limits": [0, 50]
+        },
+        "relative_humidity": {
+          "label": "Outside Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [0, 50],
+          "unsafe_limits": [0, 75]
+        },
+        "pressure": {
+          "label": "Pressure",
+          "unit": "hPa",
+          "type": "Latest",
+          "filter_invalid": true
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [10, 100],
+          "unsafe_limits": [5, 100]
+        },
+        "rg11_unsafe": {
+          "label": "Rain Sen. Wet",
+          "type": "Latest",
+          "unsafe_limits": [0, 0]
+        },
+        "dust_large": {
+          "label": "Dust (large)",
+          "type": "Latest",
+          "unit": "k/m\u00B3"
+        },
+        "dust_small": {
+          "label": "Dust (small)",
+          "type": "Latest",
+          "unit": "k/m\u00B3"
+        },
+        "sky_temperature": {
+          "label": "Sky Temp",
+          "unit": "\u00B0C",
+          "type": "Range"
+        },
+        "roof_closed": {
+          "label": "Roof",
+          "type": "LatestSet",
+          "display": "BoolClosedOpen",
+          "valid_set_values": [false]
+        }
+      }
+    },
+    "ngts_m06_diskspace": {
+      "label": "NGTS M06 Diskspace",
+      "daemon": "ngts_m06_diskspace",
+      "method": "last_measurement",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [21474836480, 5497558138880],
+          "unsafe_limits": [5368709120, 5497558138880]
+        }
+      }
+    },
+    "ephem": {
+      "label": "Ephemeris",
+      "daemon": "ngts_ephemeris",
+      "method": "last_measurement",
+      "query_rate": 30,
+      "stale_age": 120,
+      "parameters": {
+        "sun_alt": {
+          "label": "Sun Alt.",
+          "type": "Latest",
+          "unit": "\u00B0",
+          "warn_limits": [-90, -10],
+          "unsafe_limits": [-90, 5]
+        },
+        "moon_alt": {
+          "label": "Moon Alt.",
+          "type": "Latest",
+          "unit": "\u00B0"
+        },
+        "moon_percent_illumination": {
+          "label": "Moon Illumination",
+          "type": "Latest",
+          "unit": "%"
+        }
+      }
+    }
+  }
+}

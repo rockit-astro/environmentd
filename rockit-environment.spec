@@ -23,6 +23,7 @@ mkdir -p %{buildroot}%{_udevrulesdir}
 
 %{__install} %{_sourcedir}/lapalma.json %{buildroot}%{_sysconfdir}/environmentd
 %{__install} %{_sourcedir}/warwick.json %{buildroot}%{_sysconfdir}/environmentd
+%{__install} %{_sourcedir}/ngts.json %{buildroot}%{_sysconfdir}/environmentd
 
 %package server
 Summary:  Environment server
@@ -64,5 +65,14 @@ Group:   Unspecified
 %files data-warwick
 %defattr(0644,root,root,-)
 %{_sysconfdir}/environmentd/warwick.json
+
+%package data-ngts
+Summary: Environment data for NGTS
+Group:   Unspecified
+%description data-ngts
+
+%files data-ngts
+%defattr(0644,root,root,-)
+%{_sysconfdir}/environmentd/ngts.json
 
 %changelog
