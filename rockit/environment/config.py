@@ -89,7 +89,7 @@ CONFIG_SCHEMA = {
                                 'type': {
                                     'type': 'string',
                                     # These must also be defined in the 'anyOf' cases below
-                                    'enum': ['Range', 'Median', 'Latest', 'Set']
+                                    'enum': ['Range', 'Median', 'Latest', 'Set', 'LatestSet']
                                 },
                                 'filter_invalid': {
                                     'type': 'boolean'
@@ -120,7 +120,7 @@ CONFIG_SCHEMA = {
                                     'type': 'string'
                                 },
 
-                                # Only used if type: Set
+                                # Only used if type: Set, LatestSet
                                 'valid_set_values': {
                                     'type': 'array'
                                 }
@@ -138,7 +138,7 @@ CONFIG_SCHEMA = {
                                 {
                                     'properties': {
                                         'type': {
-                                            'enum': ['Set', 'Range', 'Latest']
+                                            'enum': ['Set', 'Range', 'Latest', 'LatestSet']
                                         }
                                     }
                                 }
@@ -164,7 +164,7 @@ def parse_watcher_parameter(parameter, parameter_json):
         median_key = parameter_json['median_key']
 
     valid_set_values = None
-    if behaviour == AggregateBehaviour.Set and 'valid_set_values' in parameter_json:
+    if behaviour in [AggregateBehaviour.Set, AggregateBehaviour.LatestSet] and 'valid_set_values' in parameter_json:
         valid_set_values = set(parameter_json['valid_set_values'])
 
     limits = parameter_json.get('unsafe_limits', None)

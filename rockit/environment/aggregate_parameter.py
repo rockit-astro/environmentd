@@ -25,7 +25,7 @@ import statistics
 
 class AggregateBehaviour:
     """Aggregation behaviour"""
-    Range, Median, Latest, Set = range(4)
+    Range, Median, Latest, Set, LatestSet = range(5)
 
     @classmethod
     def parse(cls, value):
@@ -38,6 +38,8 @@ class AggregateBehaviour:
             return cls.Latest
         if value == 'Set':
             return cls.Set
+        if value == 'LatestSet':
+            return cls.LatestSet
         raise ValueError('could not convert string to AggregateBehaviour: ' + value)
 
 
@@ -154,7 +156,33 @@ class AggregateParameter:
                 # If all values are valid the set difference against _valid_set_values will be empty
                 ret['unsafe'] = ret['warning'] = bool(values - self._valid_set_values)
 
-        else:
+        elif self._behaviour == AggregateBehaviour.Set:
+            ret['latest'] = measurements[-1][self._measurement_name]
+
+            # Convert to a set to remove duplicates
+            values = {m[self._measurement_name] for m in measurements}
+
+            # Convert back to a list so it can be serialized as json
+            ret['values'] = list(values)
+
+            if self._display:
+                ret['display'] = self._display
+
+            if self._valid_set_values:
+                ret['valid_values'] = list(self._valid_set_values)
+
+                # If all values are valid the set difference against _valid_set_values will be empty
+                ret['unsafe'] = ret['warning'] = bool(values - self._valid_set_values)
+        elif self._behaviour == AggregateBehaviour.LatestSet:
+            ret['latest'] = measurements[-1][self._measurement_name]
+
+            if self._display:
+                ret['display'] = self._display
+
+            if self._valid_set_values:
+                ret['valid_values'] = list(self._valid_set_values)
+                ret['unsafe'] = ret['warning'] = ret['latest'] not in self._valid_set_values
+        else:  # AggregateBehaviour.Latest
             ret['latest'] = measurements[-1][self._measurement_name]
 
             if self._display:
