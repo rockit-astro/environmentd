@@ -2,7 +2,7 @@
   "daemon": "observatory_environment",
   "log_name": "environmentd",
   "window_length": 1200,
-  "control_machines": ["OneMetreDome", "OneMetreTCS", "CLASPTCS", "SWASPTCS", "HalfMetreTCS", "GOTOServer"],
+  "control_machines": ["OneMetreDome", "OneMetreTCS", "CLASPTCS", "STINGTCS", "HalfMetreTCS", "GOTOServer"],
   "watchers": {
     "w1m_vaisala": {
       "label": "W1m Vaisala",
@@ -417,15 +417,15 @@
           "warn_limits": [0, 50],
           "unsafe_limits": [0, 75]
         },
-        "superwasp_temperature": {
-          "label": "SWASP Temp.",
+        "sting_temperature": {
+          "label": "STING Temp.",
           "unit": "\u00B0C",
           "type": "Range",
           "warn_limits": [3, 30],
           "unsafe_limits": [0, 50]
         },
-        "superwasp_humidity": {
-          "label": "SWASP Hum.",
+        "sting_humidity": {
+          "label": "STING Hum.",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 50],
@@ -735,9 +735,9 @@
         }
       }
     },
-    "superwasp_diskspace_das1": {
-      "label": "SuperWASP DAS1 Diskspace",
-      "daemon": "superwasp_diskspace_das1",
+    "sting_diskspace_das1": {
+      "label": "STING DAS1 Diskspace",
+      "daemon": "sting_diskspace_das1",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -752,9 +752,9 @@
         }
       }
     },
-    "superwasp_diskspace_das2": {
-      "label": "SuperWASP DAS2 Diskspace",
-      "daemon": "superwasp_diskspace_das2",
+    "sting_diskspace_das2": {
+      "label": "STING DAS2 Diskspace",
+      "daemon": "sting_diskspace_das2",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
