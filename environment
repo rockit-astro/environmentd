@@ -25,7 +25,7 @@ import json
 import os
 import sys
 import Pyro4
-from rockit.common import TFmt
+from rockit.common import print
 from rockit.environment import Config
 
 SCRIPT_NAME = os.path.basename(sys.argv[0])
@@ -34,34 +34,34 @@ sys.excepthook = Pyro4.util.excepthook
 
 SET_LABELS = {
     'BoolPowerOnOff': {
-        False: TFmt.Bold + 'POWER OFF' + TFmt.Clear,
-        True: TFmt.Bold + 'POWER ON' + TFmt.Clear
+        False: '[b]POWER OFF[/b]',
+        True: '[b]POWER ON[/b]'
     },
     'BoolClosedOpen': {
-        False: TFmt.Bold + 'OPEN' + TFmt.Clear,
-        True: TFmt.Bold + 'CLOSED' + TFmt.Clear
+        False: 'OPEN',
+        True: 'CLOSED'
     },
     'BoolSafeTripped': {
-        False: TFmt.Bold + TFmt.Red + 'TRIPPED' + TFmt.Clear,
-        True: TFmt.Bold + TFmt.Green + 'SAFE' + TFmt.Clear
+        False: '[red]TRIPPED[/red]',
+        True: '[green]SAFE[/green]'
     },
     'BoolHealthyUnhealthy': {
-        False: TFmt.Bold + TFmt.Red + 'UNHEALTY' + TFmt.Clear,
-        True: TFmt.Bold + TFmt.Green + 'HEALTHY' + TFmt.Clear
+        False: '[red]UNHEALTY[/red]',
+        True: '[green]HEALTHY[/green]'
     },
     'UPSStatus': {
-        1: TFmt.Bold + TFmt.Red + 'UNKNOWN' + TFmt.Clear,
-        2: TFmt.Bold + TFmt.Green + 'ONLINE' + TFmt.Clear,
-        3: TFmt.Bold + TFmt.Yellow + 'ON BATTERY' + TFmt.Clear,
-        4: TFmt.Bold + TFmt.Red + 'SMART BOOST' + TFmt.Clear,
-        5: TFmt.Bold + TFmt.Red + 'TIMED SLEEPING' + TFmt.Clear,
-        6: TFmt.Bold + TFmt.Red + 'SOFTWARE BYPASS' + TFmt.Clear,
-        7: TFmt.Bold + TFmt.Red + 'OFF' + TFmt.Clear,
-        8: TFmt.Bold + TFmt.Red + 'REBOOTING' + TFmt.Clear,
-        9: TFmt.Bold + TFmt.Red + 'SWITCHED BYPASS' + TFmt.Clear,
-        10: TFmt.Bold + TFmt.Red + 'HARDWARE FAILURE BYPASS' + TFmt.Clear,
-        11: TFmt.Bold + TFmt.Red + 'SLEEPING UNTIL POWER RETURNS' + TFmt.Clear,
-        12: TFmt.Bold + TFmt.Red + 'ON SMART TRIM' + TFmt.Clear
+        1: '[red]UNKNOWN[/red]',
+        2: '[green]ONLINE[/green]',
+        3: '[yellow]ON BATTERY[/yellow]',
+        4: '[red]SMART BOOST[/red]',
+        5: '[red]TIMED SLEEPING[/red]',
+        6: '[red]SOFTWARE BYPASS[/red]',
+        7: '[red]OFF[/red]',
+        8: '[red]REBOOTING[/red]',
+        9: '[red]SWITCHED BYPASS[/red]',
+        10: '[red]HARDWARE FAILURE BYPASS[/red]',
+        11: '[red]SLEEPING UNTIL POWER RETURNS[/red]',
+        12: '[red]ON SMART TRIM[/red]'
     }
 }
 
@@ -135,31 +135,26 @@ def format_date(data):
         except:
             pass
 
-    ret = TFmt.Bold
     if start and end:
-        ret += start.strftime('%H:%M:%S') + ' \u2014 '
-        if not current:
-            ret += TFmt.Red
-        ret += end.strftime('%H:%M:%S') + TFmt.Clear
-        ret += TFmt.Bold + ':' + TFmt.Clear
+        color = 'default' if current else 'red'
+        return f'[b]{start.strftime("%H:%M:%S")} \u2014 [{color}]{end.strftime("%H:%M:%S")}[/{color}]:[/b]'
     else:
-        ret += TFmt.Red + 'NO DATA' + TFmt.Clear
-    return ret
+        return '[b][red]NO DATA[red][/b]'
 
 
 def format_value(value, data, fmt='.1f'):
     """Builds a formatted string colored based on the specified limits"""
-    color = TFmt.Bold
     limits = data.get('limits', None)
     warn_limits = data.get('warn_limits', None)
 
+    color = 'default'
     if limits or warn_limits:
         if limits and (value < limits[0] or value > limits[1]):
-            color += TFmt.Red
+            color = 'red'
         elif warn_limits and (value < warn_limits[0] or value > warn_limits[1]):
-            color += TFmt.Yellow
+            color = 'yellow'
         else:
-            color += TFmt.Green
+            color = 'green'
 
     display = data.get('display', None)
     if display == 'DiskBytes':
@@ -169,7 +164,7 @@ def format_value(value, data, fmt='.1f'):
         value = SET_LABELS[display].get(value, value)
         fmt = ''
 
-    return color + ('{0' + fmt + '}').format(value) + TFmt.Clear
+    return f'[b][{color}]' + ('{0' + fmt + '}').format(value) + f'[/{color}][/b]'
 
 
 def format_measurement(data, suffix='', fmt='.1f'):
@@ -184,7 +179,7 @@ def format_measurement(data, suffix='', fmt='.1f'):
     if data['current']:
         ret += format_value(data['latest'], data, fmt)
     else:
-        ret += TFmt.Red + TFmt.Bold + 'NO DATA' + TFmt.Clear
+        ret += '[b][red]NO DATA[/red][/b]'
 
     if 'max' in data:
         ret += ' \u2264 ' + format_value(data['max'], data, fmt)
@@ -193,9 +188,9 @@ def format_measurement(data, suffix='', fmt='.1f'):
         ret += suffix
 
     if data['unsafe']:
-        ret += TFmt.Red + TFmt.Bold + ' (UNSAFE)' + TFmt.Clear
+        ret += ' [b][red](UNSAFE)[/red][/b]'
     elif data['warning']:
-        ret += TFmt.Red + TFmt.Yellow + ' (WARNING)' + TFmt.Clear
+        ret += ' [b][yellow](WARNING)[/yellow][/b]'
 
     return ret
 
@@ -207,9 +202,9 @@ def format_set(data):
         labels = SET_LABELS.get(data['display'], [])
 
     if data['current']:
-        ret = labels.get(data['latest'], data['latest'])
+        ret = f'[b]{labels.get(data["latest"], data["latest"])}[/b]'
     else:
-        ret = TFmt.Red + TFmt.Bold + 'NO DATA' + TFmt.Clear
+        ret = '[b][red]NO DATA[/red][/b]'
 
     if 'values' in data and (len(data['values']) > 1 or not data['current']):
         if ret:
@@ -218,9 +213,9 @@ def format_set(data):
         ret += '[' + ', '.join(display_values) + ']'
 
     if data['unsafe']:
-        ret += TFmt.Red + TFmt.Bold + ' (UNSAFE)' + TFmt.Clear
+        ret += ' [b][red](UNSAFE)[/red][/b]'
     elif data['warning']:
-        ret += TFmt.Red + TFmt.Yellow + ' (WARNING)' + TFmt.Clear
+        ret += ' [b][yellow](WARNING)[/yellow][/b]'
 
     return ret
 
