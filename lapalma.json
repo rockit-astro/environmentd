@@ -686,7 +686,7 @@
     },
     "w1m_diskspace": {
       "label": "W1m Diskspace",
-      "daemon": "onemetre_tcs_diskspace",
+      "daemon": "onemetre_diskspace",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -836,20 +836,6 @@
           "label": "Moon Illumination",
           "type": "Latest",
           "unit": "%"
-        }
-      }
-    },
-    "rain": {
-      "label": "Rain Detector",
-      "daemon": "onemetre_rain",
-      "method": "last_measurement",
-      "query_rate": 10,
-      "stale_age": 30,
-      "parameters": {
-        "unsafe_boards": {
-          "label": "Triggered",
-          "type": "Latest",
-          "unsafe_limits": [0, 0]
         }
       }
     }
