@@ -701,9 +701,9 @@
         }
       }
     },
-    "clasp_diskspace_cam1": {
-      "label": "CLASP CAM1 Diskspace",
-      "daemon": "clasp_diskspace_cam1",
+    "clasp_diskspace_cmos": {
+      "label": "CLASP CMOS Diskspace",
+      "daemon": "clasp_diskspace_cmos",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
@@ -718,9 +718,9 @@
         }
       }
     },
-    "clasp_diskspace_cam2": {
-      "label": "CLASP CAM2 Diskspace",
-      "daemon": "clasp_diskspace_cam2",
+    "clasp_diskspace_swir": {
+      "label": "CLASP SWIR Diskspace",
+      "daemon": "clasp_diskspace_swir",
       "method": "last_measurement",
       "query_rate": 60,
       "stale_age": 180,
