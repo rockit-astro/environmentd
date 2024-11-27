@@ -17,7 +17,7 @@
           "type": "Range",
           "filter_invalid": true,
           "warn_limits": [0, 30],
-          "unsafe_limits": [0, 40]
+          "unsafe_limits": [0, 50]
         },
         "median_wind_speed": {
           "label": "Median Wind",
@@ -25,16 +25,16 @@
           "type": "Median",
           "median_key": "wind_speed",
           "filter_invalid": true,
-          "warn_limits": [0, 15],
-          "unsafe_limits": [0, 25]
+          "warn_limits": [0, 20],
+          "unsafe_limits": [0, 30]
         },
         "wind_gust": {
           "label": "Wind Gust",
           "unit": "km/h",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [0, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [0, 40],
+          "unsafe_limits": [0, 60]
         },
         "temperature": {
           "label": "Outside Temp.",
@@ -88,7 +88,7 @@
           "type": "Range",
           "filter_invalid": true,
           "warn_limits": [0, 30],
-          "unsafe_limits": [0, 40]
+          "unsafe_limits": [0, 50]
         },
         "median_wind_speed": {
           "label": "Median Wind",
@@ -96,16 +96,16 @@
           "type": "Median",
           "median_key": "wind_speed",
           "filter_invalid": true,
-          "warn_limits": [0, 15],
-          "unsafe_limits": [0, 25]
+          "warn_limits": [0, 20],
+          "unsafe_limits": [0, 30]
         },
         "wind_gust": {
           "label": "Wind Gust",
           "unit": "km/h",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [0, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [0, 40],
+          "unsafe_limits": [0, 60]
         },
         "temperature": {
           "label": "Outside Temp.",
@@ -159,7 +159,7 @@
           "type": "Range",
           "filter_invalid": true,
           "warn_limits": [0, 30],
-          "unsafe_limits": [0, 40]
+          "unsafe_limits": [0, 50]
         },
         "median_wind_speed": {
           "label": "Median Wind",
@@ -167,16 +167,16 @@
           "type": "Median",
           "median_key": "wind_speed",
           "filter_invalid": true,
-          "warn_limits": [0, 15],
-          "unsafe_limits": [0, 25]
+          "warn_limits": [0, 20],
+          "unsafe_limits": [0, 30]
         },
         "wind_gust": {
           "label": "Wind Gust",
           "unit": "km/h",
           "type": "Range",
           "filter_invalid": true,
-          "warn_limits": [0, 30],
-          "unsafe_limits": [0, 50]
+          "warn_limits": [0, 40],
+          "unsafe_limits": [0, 60]
         },
         "temperature": {
           "label": "Outside Temp.",
