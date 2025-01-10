@@ -103,6 +103,29 @@
         }
       }
     },
+    "heliostat_internal": {
+      "label": "Heliostat Dome",
+      "daemon": "warwick_heliostat_shtstick",
+      "method": "last_measurement",
+      "query_rate": 10,
+      "stale_age": 30,
+      "parameters": {
+        "temperature": {
+          "label": "H. Dome Temp.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "warn_limits": [0, 30],
+          "unsafe_limits": [-5, 50]
+        },
+        "relative_humidity": {
+          "label": "H. Dome Hum.",
+          "unit": "%RH",
+          "type": "Range",
+          "warn_limits": [0, 70],
+          "unsafe_limits": [0, 90]
+        }
+      }
+    },
     "cloudwatcher": {
       "label": "Cloud Watcher",
       "daemon": "warwick_cloudwatcher",
