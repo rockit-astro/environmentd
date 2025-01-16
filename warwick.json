@@ -82,7 +82,7 @@
     },
     "internal": {
       "label": "Dome",
-      "daemon": "warwick_rhusb",
+      "daemon": "warwick_dome_shtstick",
       "method": "last_measurement",
       "query_rate": 10,
       "stale_age": 30,
@@ -94,12 +94,20 @@
           "warn_limits": [0, 30],
           "unsafe_limits": [-5, 50]
         },
-        "humidity": {
+        "relative_humidity": {
           "label": "Dome Hum.",
           "unit": "%RH",
           "type": "Range",
           "warn_limits": [0, 70],
           "unsafe_limits": [0, 90]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [5, 100],
+          "unsafe_limits": [2.5, 100]
         }
       }
     },
@@ -123,6 +131,14 @@
           "type": "Range",
           "warn_limits": [0, 70],
           "unsafe_limits": [0, 90]
+        },
+        "dew_point_delta": {
+          "label": "Temp. > Dew Pt.",
+          "unit": "\u00B0C",
+          "type": "Range",
+          "filter_invalid": true,
+          "warn_limits": [5, 100],
+          "unsafe_limits": [2.5, 100]
         }
       }
     },
