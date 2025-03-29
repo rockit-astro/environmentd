@@ -25,6 +25,7 @@ mkdir -p %{buildroot}%{_udevrulesdir}
 %{__install} %{_sourcedir}/warwick.json %{buildroot}%{_sysconfdir}/environmentd
 %{__install} %{_sourcedir}/ngts.json %{buildroot}%{_sysconfdir}/environmentd
 %{__install} %{_sourcedir}/portable.json %{buildroot}%{_sysconfdir}/environmentd
+%{__install} %{_sourcedir}/pdt.json %{buildroot}%{_sysconfdir}/environmentd
 
 %package server
 Summary:  Environment server
@@ -84,5 +85,14 @@ Group:   Unspecified
 %files data-portable
 %defattr(0644,root,root,-)
 %{_sysconfdir}/environmentd/portable.json
+
+%package data-pdt
+Summary: Environment data for the PDT
+Group:   Unspecified
+%description data-pdt
+
+%files data-pdt
+%defattr(0644,root,root,-)
+%{_sysconfdir}/environmentd/pdt.json
 
 %changelog

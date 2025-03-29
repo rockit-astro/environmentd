@@ -1,0 +1,25 @@
+{
+  "daemon": "pdt_environment",
+  "log_name": "environmentd@pdt",
+  "window_length": 1200,
+  "control_machines": ["LocalHost"],
+  "watchers": {
+    "pdt_diskspace": {
+      "label": "Diskspace",
+      "daemon": "pdt_diskspace",
+      "method": "last_measurement",
+      "query_rate": 60,
+      "stale_age": 180,
+      "parameters": {
+        "data_fs_available_bytes": {
+          "label": "Available",
+          "type": "Latest",
+          "display": "DiskBytes",
+          "unit": "GiB",
+          "warn_limits": [21474836480, 21990232555520],
+          "unsafe_limits": [5368709120, 21990232555520]
+        }
+      }
+    }
+  }
+}
