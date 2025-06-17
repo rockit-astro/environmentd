@@ -1,6 +1,6 @@
 Name:      rockit-environment
 Version:   %{_version}
-Release:   1
+Release:   1%{dist}
 Summary:   Environment aggregration daemon
 Url:       https://github.com/rockit-astro/environmentd
 License:   GPL-3.0
