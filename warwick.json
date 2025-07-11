@@ -2,7 +2,7 @@
   "daemon": "warwick_environment",
   "log_name": "environmentd@warwick",
   "window_length": 1200,
-  "control_machines": ["WarwickTCS", "WarwickDome"],
+  "control_machines": ["WarwickTCS"],
   "watchers": {
     "vaisala": {
       "label": "Vaisala",
